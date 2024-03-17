@@ -54,13 +54,17 @@ This Node.js application is designed to manage containers at a container termina
    npm install
 
 ### Configuration
+
 Create a .env file in the root directory:
+
    ```bash
    PORT=5000
-   MONGODBURI=''
+   MONGODBURI='dfsa'
    JWT_SECRET=''
+   ```
 
 5. Start the development server:  
+    
     ```bash
     npm start
 
