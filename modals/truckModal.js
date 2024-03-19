@@ -40,3 +40,49 @@ const truckSchema = mongoose.Schema(
 const Truck = mongoose.model("Truck", truckSchema);
 
 export default Truck;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// var mongoose = require('mongoose');
+// var Schema = mongoose.Schema;
+// var trucks = new Schema({
+//   name: {
+//     type: String,
+//     required: true
+//   },
+//   owner: {
+//     type: Schema.Types.ObjectId,
+//     required: true
+//   },
+//   registrationNumber: {
+//     type: String,
+//     required: true
+//   },
+//   feet: {
+//     type: String,
+//     required: true
+//   },
+//   permits: {
+//     type: Array,
+//     required: true
+//   },
+//   status: {
+//     type: String,
+//     required: true,
+//     queue,
+//     allocation,
+//     onGoing,
+//     offline
+//   }
+// });
