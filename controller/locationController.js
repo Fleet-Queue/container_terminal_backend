@@ -37,4 +37,15 @@ const getLocationByName = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerLocation, getLocationByName };
+
+const getAllLocation = AsyncHandler(async (req, res) => {
+  const location = await Location.find();
+  if (location) {
+    res.status(201).json(location);
+  } else {
+    res.status(404);
+    throw new Error("location not found");
+  }
+});
+
+export { registerLocation, getLocationByName,getAllLocation };

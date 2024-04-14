@@ -46,7 +46,24 @@ const registerTruck = AsyncHandler(async (req, res) => {
 
 const getTruckByNumber = AsyncHandler(async (req, res) => {
   const { registrationNumber } = req.body;
-  const truck = await Truck.findOne({ registrationNumber: registrationNumber });
+  const truck = await Truck.findOne({ registrationNumber: registrationNumber }).populate('driverId');
+  if (truck) {
+    if (!truck.companyId.equals(req.user.companyId)) {
+      res.status(404);
+      throw new Error(
+        "Access Denied, You dont have access to get this truck details"
+      );
+    }
+    res.status(201).json(truck);
+  } else {
+    res.status(404);
+    throw new Error("truck not found");
+  }
+});
+
+const getTruckById = AsyncHandler(async (req, res) => {
+  const { truckId } = req.body;
+  const truck = await Truck.findById(truckId).populate('driverId');
   if (truck) {
     if (!truck.companyId.equals(req.user.companyId)) {
       res.status(404);
@@ -66,8 +83,12 @@ const getAllTruck = AsyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Company Id not found");
   }
+  let queryCondition = { companyId: req.user.companyId };
 
-  const trucks = await Truck.find({ companyId: req.user.companyId });
+  if (req.body.status) {
+    queryCondition.status = req.body.status;
+  }
+  const trucks = await Truck.find(queryCondition);
   if (trucks) {
     res.status(201).json(trucks);
   } else {
@@ -107,14 +128,19 @@ const deleteTruck = AsyncHandler(async (req, res) => {
         "Access Denied, You dont have access to get this truck details"
       );
     }
-    
-    await truck.deleteOne({_id: truck._id});
-    res
-      .status(200)
-      .json({ message: "Truck deleted successfully"});
+
+    await truck.deleteOne({ _id: truck._id });
+    res.status(200).json({ message: "Truck deleted successfully" });
   } else {
     res.status(404);
     throw new Error("truck not found");
   }
 });
-export { registerTruck, getTruckByNumber, getAllTruck, updateStatus, deleteTruck};
+export {
+  registerTruck,
+  getTruckByNumber,
+  getTruckById,
+  getAllTruck,
+  updateStatus,
+  deleteTruck,
+};

@@ -8,6 +8,8 @@ import driverRouter from './routes/driverRoute.js'
 import locationRouter from './routes/locationRoute.js'
 import companyRouter from './routes/companyRoute.js'
 import truckRouter from './routes/truckRoute.js'
+import partyRouter from './routes/partyRoute.js'
+
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 import 'dotenv/config';
 import cookieParser from "cookie-parser";
@@ -54,13 +56,13 @@ const limiter = rateLimit({
   },
 });
 
-app.use(['/api/login', '/api/admin/login'], limiter);
+app.use(['/api/user/login', '/api/admin/login'], limiter);
  app.use('/api/user',userRouter)
  app.use('/api/driver',driverRouter)
  app.use('/api/location',locationRouter)
  app.use('/api/company',companyRouter)
  app.use('/api/truck',truckRouter)
-
+ app.use('/api/party',partyRouter)
 connectDB();
 
 httpServer.listen(PORT,()=>{

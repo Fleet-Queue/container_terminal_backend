@@ -1,7 +1,7 @@
-var mongoose = require('mongoose');
+import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 var PartySchema = new Schema({
-  partyName: {
+  name: {
     type: String,
     required: true
   },
@@ -31,7 +31,13 @@ var PartySchema = new Schema({
   },
   contactNumber: {
     type: Number,
-    required: true
+    required: true,
+    validate: {
+      validator: function (v) {
+          return /^\d{10}$/.test(v); 
+      },
+      message: (props) => `${props.value} is not a valid phone number!`,
+    },
   }
 },{
   timestamps: true,

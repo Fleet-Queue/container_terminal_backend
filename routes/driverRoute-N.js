@@ -4,7 +4,7 @@ import {
  getLocationByName,
  getAllLocation
 } from "../controller/locationController.js";
-import { protect, protectRefreshToken } from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
