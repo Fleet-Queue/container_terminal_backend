@@ -1,25 +1,29 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var Party = new Schema({
+var PartySchema = new Schema({
   partyName: {
     type: String,
     required: true
   },
-  location: {
+  address: {
     type: String,
     required: true
   },
-  trailerAccepted: {
-    type: Array,
+  isTrailerAllowed: {
+    type: Boolean,
     required: true
   },
-  fourtyFeetRate: {
-    type: Number,
-    required: true
+  locationId: {
+    type: Schema.Types.ObjectId,
+    ref: "Location",
   },
-  twentyFeetRate: {
-    type: Number,
-    required: true
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+  },
+  allocatedUserId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
   },
   contactPerson: {
     type: String,
@@ -29,4 +33,10 @@ var Party = new Schema({
     type: Number,
     required: true
   }
+},{
+  timestamps: true,
 });
+
+const Party = mongoose.model("Party", PartySchema);
+
+export default Party;

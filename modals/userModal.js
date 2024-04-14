@@ -1,9 +1,18 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+var Schema = mongoose.Schema;
 
 const userSchema = mongoose.Schema(
   {
     name: {
+      type: String,
+      required: true,
+    },
+    userName: {
+      type: String,
+      required: true,
+    },
+    address: {
       type: String,
       required: true,
     },
@@ -24,6 +33,9 @@ const userSchema = mongoose.Schema(
     status: {
       type: Boolean,
     },
+    NoOfFailedAttempt: {
+      type: Number,
+    },
     password: {
       type: String,
       required: true,
@@ -31,7 +43,11 @@ const userSchema = mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["forwarder", "transporter", "admin", "superAdmin"],
+      enum: ["company", "admin", "superAdmin"],
+    },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
     },
   },
   {

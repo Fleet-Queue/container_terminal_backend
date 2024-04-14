@@ -1,13 +1,26 @@
 import AsyncHandler from "express-async-handler";
 import User from "../modals/userModal.js";
+import Company from "../modals/companyModal.js";
 import {
   generateAccessToken,
   generateRefreshToken,
 } from "../utils/generateToken.js";
 
 const registerUser = AsyncHandler(async (req, res) => {
-  const { email, name, password, phone, role } = req.body;
+  const { email, name, password, phone, role,userName,address,companyId } = req.body;
   const status = "true";
+  if(role=="company" && !companyId){
+    res.status(400);
+    throw new Error("Company Id not Found");
+  }
+  if(role=="company"){
+    const company = await Company.findById(companyId);
+    if(!company){
+      res.status(400);
+      throw new Error("Company not Found");
+    }
+  }
+  
   const user = await User.findOne({ phone: phone });
   if (user) {
     res.status(403);
@@ -20,6 +33,9 @@ const registerUser = AsyncHandler(async (req, res) => {
     password,
     role,
     status,
+    userName,
+    companyId,
+    address
   });
 
   if (newUser) {
@@ -36,10 +52,10 @@ const registerUser = AsyncHandler(async (req, res) => {
 });
 
 const authUser = AsyncHandler(async (req, res) => {
-  const { phone, password, role } = req.body;
-  const user = await User.findOne({ phone: phone });
+  const { phone, password } = req.body;
+  const user = await User.findOne({ phone: phone }).populate('companyId');
 
-  if (user && user.role == role && user.status) {
+  if (user && user.status) {
     if (await user.matchPassword(password)) {
       const refresh = generateRefreshToken(user._id);
 
@@ -48,6 +64,7 @@ const authUser = AsyncHandler(async (req, res) => {
       res.json({
         accessToken: generateAccessToken(user._id),
         userId: user._id,
+        user: user
       });
     } else {
       res.status(403);

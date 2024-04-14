@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+const { Schema } = mongoose; // Import the Schema object from mongoose
 
 const truckSchema = mongoose.Schema(
   {
@@ -10,23 +11,31 @@ const truckSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    phone: {
-      type: String,
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
+    driverId: {
+      type: Schema.Types.ObjectId,
+      ref: "Driver",
       required: true,
     },
     active: {
       type: Boolean,
+      default:1
     },
-    state: {
+    category: {
       type: String,
-      required: true,
+      enum: ["Trailer", "DA", "MULTIAXIL"],
     },
-    feet: {
+    truckType: {
       type: Number,
       enum: [20, 40],
     },
     status: {
       type: String,
+      default:"inqueue",
       enum: ["inqueue", "allocated", "ongoing", "offline"],
     },
   },
@@ -35,24 +44,9 @@ const truckSchema = mongoose.Schema(
   }
 );
 
-
-
 const Truck = mongoose.model("Truck", truckSchema);
 
 export default Truck;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // var mongoose = require('mongoose');
 // var Schema = mongoose.Schema;

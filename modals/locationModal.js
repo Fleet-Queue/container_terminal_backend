@@ -1,12 +1,28 @@
-var mongoose = require('mongoose');
+import mongoose from "mongoose";
+
 var Schema = mongoose.Schema;
-var location = new Schema({
+var locationSchema = new Schema({
   name: {
     type: String,
     required: true
   },
-  distance: {
-    type: String,
+  kilometer: {
+    type: Number,
     required: true
+  },
+  isHighRangeArea:{
+    type: Boolean,
+    required: true
+  },
+  tripType:{
+    type: String,
+    enum: ["medium", "local", "long","nationalPermit"],
   }
+}, {
+  timestamps: true,
 });
+
+
+const Location = mongoose.model("Location", locationSchema);
+
+export default Location;

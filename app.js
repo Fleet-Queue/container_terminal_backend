@@ -2,7 +2,12 @@ import express from "express";
 import cors from 'cors'
 import morgan from "morgan";
 import connectDB from "./config/connection.js";
+//Routes
 import userRouter from './routes/userRoute.js'
+import driverRouter from './routes/driverRoute.js'
+import locationRouter from './routes/locationRoute.js'
+import companyRouter from './routes/companyRoute.js'
+import truckRouter from './routes/truckRoute.js'
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 import 'dotenv/config';
 import cookieParser from "cookie-parser";
@@ -51,8 +56,10 @@ const limiter = rateLimit({
 
 app.use(['/api/login', '/api/admin/login'], limiter);
  app.use('/api/user',userRouter)
-
-
+ app.use('/api/driver',driverRouter)
+ app.use('/api/location',locationRouter)
+ app.use('/api/company',companyRouter)
+ app.use('/api/truck',truckRouter)
 
 connectDB();
 
