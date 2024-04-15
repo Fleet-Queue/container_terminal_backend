@@ -53,6 +53,7 @@ const registerUser = AsyncHandler(async (req, res) => {
 
 const authUser = AsyncHandler(async (req, res) => {
   const { phone, password } = req.body;
+  console.log(req.body)
   const user = await User.findOne({ phone: phone }).populate('companyId');
 
   if (user && user.status) {

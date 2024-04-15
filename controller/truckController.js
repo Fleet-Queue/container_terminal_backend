@@ -88,6 +88,10 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   if (req.body.status) {
     queryCondition.status = req.body.status;
   }
+
+  if (req.body.type) {
+    queryCondition.truckType = req.body.type;
+  }
   const trucks = await Truck.find(queryCondition);
   if (trucks) {
     res.status(201).json(trucks);
@@ -96,6 +100,8 @@ const getAllTruck = AsyncHandler(async (req, res) => {
     throw new Error("no trucks found");
   }
 });
+
+
 
 const updateStatus = AsyncHandler(async (req, res) => {
   const { truckId, status } = req.body;

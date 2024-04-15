@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 var DOBookingSchema = new Schema({
+  itemName: {
+    type: String,
+    required: true
+  },
   partyId: {
     type: Schema.Types.ObjectId,
     ref: "Party",
@@ -13,28 +17,18 @@ var DOBookingSchema = new Schema({
     type: Number,
     enum: [20, 40],
   },
-  // truck: {
-  //   type: Schema.Types.ObjectId,
-  //   required: true
-  // },
   rate: {
-    type: number,
+    type: Number,
     required: true
   },
   availableFrom: {
     type: Date,
     required: true
   },
-  // endingDate: {
-  //   type: Date,
-  //   required: true
-  // },
-  // startingTime: {
-  //   type: Date,
-  //   required: true
-  // },
+  
   status: {
     type: String,
+    default: 'open',
     enum: ['open', 'allocated', 'cancelled'],
     required: true
   }

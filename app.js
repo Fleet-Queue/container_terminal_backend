@@ -9,7 +9,7 @@ import locationRouter from './routes/locationRoute.js'
 import companyRouter from './routes/companyRoute.js'
 import truckRouter from './routes/truckRoute.js'
 import partyRouter from './routes/partyRoute.js'
-
+import doBookingRoute from './routes/doBookingRoute.js'
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 import 'dotenv/config';
 import cookieParser from "cookie-parser";
@@ -63,6 +63,7 @@ app.use(['/api/user/login', '/api/admin/login'], limiter);
  app.use('/api/company',companyRouter)
  app.use('/api/truck',truckRouter)
  app.use('/api/party',partyRouter)
+ app.use('/api/doBooking',doBookingRoute)
 connectDB();
 
 httpServer.listen(PORT,()=>{
