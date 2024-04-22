@@ -1,14 +1,15 @@
 import mongoose from "mongoose";
-
+var Schema = mongoose.Schema;
 const rateMappingSchema = mongoose.Schema(
   {
-    companyId: {
+    locationId: {
       type: Schema.Types.ObjectId,
       ref: "Location",
+      required: true
     },
     truckCategory: {
       type: String,
-      enum: ["DA", "Trailer", "MultiAxil"],
+      enum: ["Trailer", "DA", "MULTIAXIL"],
     },
     truckType: {
       type: Number,

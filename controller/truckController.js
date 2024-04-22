@@ -92,7 +92,7 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   if (req.body.type) {
     queryCondition.truckType = req.body.type;
   }
-  const trucks = await Truck.find(queryCondition);
+  const trucks = await Truck.find(queryCondition).populate('companyId')
   if (trucks) {
     res.status(201).json(trucks);
   } else {

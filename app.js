@@ -6,10 +6,12 @@ import connectDB from "./config/connection.js";
 import userRouter from './routes/userRoute.js'
 import driverRouter from './routes/driverRoute.js'
 import locationRouter from './routes/locationRoute.js'
+import rateMappingRoute from './routes/rateMappingRoute.js'
 import companyRouter from './routes/companyRoute.js'
 import truckRouter from './routes/truckRoute.js'
 import partyRouter from './routes/partyRoute.js'
 import doBookingRoute from './routes/doBookingRoute.js'
+import allocationRoute from './routes/allocationRoute.js'
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 import 'dotenv/config';
 import cookieParser from "cookie-parser";
@@ -63,7 +65,9 @@ app.use(['/api/user/login', '/api/admin/login'], limiter);
  app.use('/api/company',companyRouter)
  app.use('/api/truck',truckRouter)
  app.use('/api/party',partyRouter)
+ app.use('/api/rate',rateMappingRoute)
  app.use('/api/doBooking',doBookingRoute)
+ app.use('/api/allocation',allocationRoute)
 connectDB();
 
 httpServer.listen(PORT,()=>{

@@ -53,6 +53,7 @@ const getParty = AsyncHandler(async (req, res) => {
     path: 'allocatedUserId',
     select: '-password' // Exclude the "password" field from the populated "companyId"
   });
+  
   if (party) {
     res.status(201).json(party);
   } else {

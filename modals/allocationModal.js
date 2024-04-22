@@ -10,11 +10,13 @@ var allocationSchema = new Schema({
     ref: "TruckBooking",
   },
   allocatedOn: {
+    default: Date.now, 
     type: Date,
     required: true
   },
   status: {
     type: String,
+    default:"allocated",
     enum: ['open', 'allocated', 'cancelled'],
     required: true
   }

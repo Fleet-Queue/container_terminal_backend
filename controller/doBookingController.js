@@ -18,6 +18,11 @@ const registerBooking = AsyncHandler(async (req, res) => {
     throw new Error("company not found");
   }
 
+  if(company.companyType === 'transporter'){
+    res.status(404);
+    throw new Error("its only transporter company");
+  }
+
   const newBooking = await DoBooking.create({
     partyId,
     itemName,
@@ -48,6 +53,8 @@ const getDoById = AsyncHandler(async (req, res) => {
   }
 });
 
+
+///party populate
 const getAllBooking = AsyncHandler(async (req, res) => {
   let queryCondition = {
     companyId: req.user.companyId,
@@ -55,7 +62,10 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   if (req.body.status) {
     queryCondition.status = req.body.status;
   }
-  const bookings = await DoBooking.find(queryCondition);
+  if (req.body.partyId) {
+    queryCondition.partyId = req.body.partyId;
+  }
+  const bookings = await DoBooking.find(queryCondition).populate("partyId")
   if (bookings) {
     res.status(201).json(bookings);
   } else {
@@ -63,5 +73,7 @@ const getAllBooking = AsyncHandler(async (req, res) => {
     throw new Error("bookings not found");
   }
 });
+
+
 
 export { registerBooking, getDoById, getAllBooking };
