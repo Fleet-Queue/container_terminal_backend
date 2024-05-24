@@ -2,11 +2,17 @@ import AsyncHandler from "express-async-handler";
 import Truck from "../modals/truckModal.js";
 import Company from "../modals/companyModal.js";
 import Driver from "../modals/driverModal.js";
+import TruckBooking from "../modals/truckBookingModal.js"
+import Allocation from "../modals/allocationModal.js"
 
 const registerTruck = AsyncHandler(async (req, res) => {
-  const { name, registrationNumber, driverId, companyId, category, truckType } =
+  const { name, registrationNumber, driverId,  category, truckType } =
     req.body;
-
+    if (!req.user.companyId) {
+      res.status(404);
+      throw new Error("Company Id not found");
+    }
+    let companyId = req.user.companyId
   const truck = await Truck.findOne({ registrationNumber: registrationNumber });
   if (truck) {
     res.status(403);
@@ -43,6 +49,47 @@ const registerTruck = AsyncHandler(async (req, res) => {
     throw new Error("Invalid data");
   }
 });
+
+
+const addTruckToBooking = AsyncHandler(async (req, res,next) => {
+  const {truckId, availableFrom } = req.body;
+
+
+  
+  const truck = await Truck.findById(truckId);;
+  if (!truck) {
+    res.status(400);
+    throw new Error("Truck not found");
+  }
+
+  const tBooking = await TruckBooking.findOne({truck: truckId,status: { $in: ["inqueue", "allocated"] } })
+    
+  if (tBooking) {
+    if (new Date(tBooking.availableFrom) >= new Date()) {
+      res.status(409);
+      throw new Error("Truck is already in queue, not expired yet");
+    } else {
+      // Update existing booking status to "expired"
+      await TruckBooking.findByIdAndUpdate(tBooking._id, { status: "expired" });
+    }
+  }
+
+  const newTruckBooking = await TruckBooking.create({
+    truck:truckId,
+    availableFrom,
+  
+  });
+
+  if (newTruckBooking) {
+    res.status(201).json({
+      msg: "new truck added to Booking successfully",
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid data");
+  }
+});
+
 
 const getTruckByNumber = AsyncHandler(async (req, res) => {
   const { registrationNumber } = req.body;
@@ -85,8 +132,8 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   }
   let queryCondition = { companyId: req.user.companyId };
 
-  if (req.body.status) {
-    queryCondition.status = req.body.status;
+  if (req.body.isActive) {
+    queryCondition.isActive = req.body.isActive;
   }
 
   if (req.body.type) {
@@ -101,10 +148,95 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   }
 });
 
+// getALLTRUCKBOOKING
+const getAllTruckBookings = AsyncHandler(async (req, res) => {
+  console.log("getAllTruckBookings")
+  //companyid , status,
+  if (!req.user.companyId) {
+    res.status(404);
+    throw new Error("Company Id not found");
+  }
+
+  let queryCondition = { };
+
+  if (req.body.status) {
+    queryCondition.status = req.body.status;
+  }
+
+  const truckBooking = await TruckBooking.find(queryCondition).populate({
+    path: 'truck',
+    match: { companyId: req.user.companyId } // Filter based on 'companyId'
+  });
+ 
+console.log(truckBooking);
+
+
+const truckBookingIds = truckBooking.map(tb => tb._id);
+const allocations = await Allocation.find({ truckBookingId: { $in: truckBookingIds } });
+
+const results = await Promise.all(truckBooking.map(async tb => {
+  const allocation = allocations.find(allocation => allocation.truckBookingId.equals(tb._id));
+  console.log(allocation);
+  if (allocation) {
+    // Use populate and await it directly
+    await allocation.populate('DOBookingId')
+    await allocation.DOBookingId.populate('partyId')
+    await allocation.DOBookingId.partyId.populate('locationId')
+  }
+  return {
+    ...tb.toObject(), // Convert Mongoose document to plain JavaScript object
+    allocation: allocation ? allocation.toObject() : null // Add allocation information
+  };
+}));
+
+
+  if (results) {
+    res.status(201).json(results);
+  } else {
+    res.status(404);
+    throw new Error("no trucks found");
+  }
+});
+
+
+const getAllInqueTrucks = AsyncHandler(async (req, res) => {
+  // if (!req.user.companyId) {
+  //   res.status(404);
+  //   throw new Error("Company Id not found");
+  // }
+
+  
+
+  const truckBooking = await TruckBooking.find({status:"inqueue"}).populate('truck')
+
+
+  
+
+  let filteredTruckBookings = truckBooking;
+  if (req.body.type) {
+    filteredTruckBookings = truckBooking.filter(tb => tb.truck.truckType === req.body.type);
+  }
+
+
+if(req.body.date){
+  filteredTruckBookings.filter(tb => {
+    const bookingDate = new Date(tb.availableFrom)
+    return bookingDate >= req.body.date;
+  }
+)
+}
+  
+  if (filteredTruckBookings) {
+    res.status(201).json(filteredTruckBookings);
+  } else {
+    res.status(404);
+    throw new Error("no trucks found");
+  }
+});
 
 
 const updateStatus = AsyncHandler(async (req, res) => {
-  const { truckId, status } = req.body;
+  const { truckId, isActive } = req.body;
   const truck = await Truck.findById(truckId);
   if (truck) {
     if (!truck.companyId.equals(req.user.companyId)) {
@@ -115,6 +247,15 @@ const updateStatus = AsyncHandler(async (req, res) => {
     }
     truck.status = status;
     await truck.save();
+
+    //if truck in the truckBooking we need to make cancel that truck
+
+    const tBooking = await TruckBooking.findOne({truck: truckId, status: "inqueue" })
+    
+    if(tBooking){
+      tBooking.status = "cancelled"
+      await tBooking.save();
+    }
     res
       .status(200)
       .json({ message: "Truck status updated successfully", truck });
@@ -123,6 +264,34 @@ const updateStatus = AsyncHandler(async (req, res) => {
     throw new Error("truck not found");
   }
 });
+
+
+
+const updateTruckBookingStatus = AsyncHandler(async (req, res) => {
+  const { TruckBookingId, status,cancelReason } = req.body;
+  if(status =="cancelled" && !cancelReason) {
+    res.status(404);
+    throw new Error("please provide cancellation reason");
+  }
+  const truck = await TruckBooking.findById(TruckBookingId);
+  if (truck) {
+    
+    truck.status = status;
+    if (cancelReason) {
+      truck.cancellationReason = cancelReason;
+    }
+    await truck.save();
+
+    //if truck in the truckBooking we need to make cancel that truck
+    res
+      .status(200)
+      .json({ message: "Truck Booking status updated successfully", truck });
+  } else {
+    res.status(404);
+    throw new Error("truck not found");
+  }
+});
+
 
 const deleteTruck = AsyncHandler(async (req, res) => {
   const { truckId } = req.body;
@@ -142,6 +311,8 @@ const deleteTruck = AsyncHandler(async (req, res) => {
     throw new Error("truck not found");
   }
 });
+
+
 export {
   registerTruck,
   getTruckByNumber,
@@ -149,4 +320,8 @@ export {
   getAllTruck,
   updateStatus,
   deleteTruck,
+  addTruckToBooking,
+  updateTruckBookingStatus,
+  getAllInqueTrucks,
+  getAllTruckBookings
 };

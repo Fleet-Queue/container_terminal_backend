@@ -3,9 +3,10 @@ import DoBooking from "../modals/doBookingModal.js";
 import Party from "../modals/partyModal.js";
 import Company from "../modals/companyModal.js";
 import DOBooking from "../modals/doBookingModal.js";
-const registerBooking = AsyncHandler(async (req, res) => {
-  const { itemName,partyId, companyId, truckType, rate, availableFrom } = req.body;
 
+const registerBooking = AsyncHandler(async (req, res) => {
+  const { itemName,partyId, companyId, truckType, rate, availableFrom,autoBooking } = req.body;
+//if autoBooking then auto allocate
   const party = await Party.findById(partyId);
   if (!party) {
     res.status(404);
@@ -25,7 +26,6 @@ const registerBooking = AsyncHandler(async (req, res) => {
 
   const newBooking = await DoBooking.create({
     partyId,
-    itemName,
     companyId,
     truckType,
     rate,

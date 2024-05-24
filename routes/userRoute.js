@@ -12,7 +12,6 @@ router.route('/resetPassword').post(protect, updatePassword);
 router.route('/getUserByPhone').post(protect, getUserByPhone)
 router.route('/refresh').get(protectRefreshToken);
 router.route('/logout').get(logout);
-router.route('/logout').get(logout);
 
 
 

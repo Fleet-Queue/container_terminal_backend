@@ -39,7 +39,7 @@ const getLocationByName = AsyncHandler(async (req, res) => {
 
 
 const getAllLocation = AsyncHandler(async (req, res) => {
-  const location = await Location.find();
+  const location = await Location.find().sort({ name: 1 });;
   if (location) {
     res.status(201).json(location);
   } else {

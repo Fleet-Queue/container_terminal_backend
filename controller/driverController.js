@@ -9,9 +9,14 @@ const registerDriver = AsyncHandler(async (req, res) => {
     address,
     licenceNumber,
     licenceType,
-    expiryDate,
-    companyId
+    expiryDate
   } = req.body;
+
+  if (!req.user.companyId) {
+    res.status(404);
+    throw new Error("Company Id not found");
+  }
+  let companyId = req.user.companyId
 
   const driver = await Driver.findOne({ licenceNumber: licenceNumber });
   if (driver) {
@@ -69,4 +74,18 @@ const getDriverByPhone = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerDriver, getDriverByName, getDriverByPhone };
+
+const getCompanyDrivers = AsyncHandler(async (req, res) => {
+  console.log("getCompanyDrivers")
+  if (!req.user.companyId) {
+    res.status(404);
+    throw new Error("Company Id not found");
+  }
+  let companyId = req.user.companyId
+  const drivers = await Driver.find({ companyId });
+
+    res.status(201).json(drivers);
+
+});
+
+export { registerDriver, getDriverByName, getDriverByPhone,getCompanyDrivers };

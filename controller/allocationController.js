@@ -6,7 +6,7 @@ import TruckBooking from "../modals/truckBookingModal.js"
 import DOBooking from "../modals/doBookingModal.js";
 
 const doAllocation = AsyncHandler(async (req, res) => {
-  const { doBookingId, truckId, doDate } = req.body;
+  const { doBookingId, doDate,truckBookingId } = req.body;
 
 
   const doAllocationExist = await Allocation.findOne({DOBookingId:doBookingId});
@@ -24,31 +24,37 @@ const doAllocation = AsyncHandler(async (req, res) => {
 
 
 
-  let truck = await Truck.findById(truckId);
-  if (!truck) {
+  
+ 
+
+  let truckBooking = await TruckBooking.findById(truckBookingId);
+  if (!truckBooking) {
     res.status(404);
     throw new Error("truck not found");
   }
-  const newTruckBooking = await TruckBooking.create({
-    truck:truckId,
-    availableFrom:doDate,
-  });
 
-  if (newTruckBooking) {
-    console.log("new booking added successfully");
+  if(truckBooking.availableFrom<doDate){
+    res.status(400);
+    throw new Error("truck is not available in the date");
+  }
 
+  if(truckBooking.status!="inqueue"){
+    res.status(400);
+    throw new Error("truck is not in the queue");
+  }
 
   const newAllocation = await Allocation.create({
     DOBookingId:doBookingId,
-    truckBookingId:newTruckBooking._id,
+    truckBookingId:truckBookingId
   });
 
   if(newAllocation){
-    truck.status = "allocated";
-    await truck.save();
 
     doExist.status = "allocated"
     await doExist.save();
+
+    truckBooking.status = "allocated"
+    await truckBooking.save()
 
     res.status(201).json({
       msg: "new allocation addded successfully",
@@ -59,11 +65,76 @@ const doAllocation = AsyncHandler(async (req, res) => {
     throw new Error("Invalid data for allocation");
   }
 
-  } else {
-    res.status(400);
-    throw new Error("Invalid data");
-  }
+ 
 });
+
+
+
+
+
+const doAutoAllocation = AsyncHandler(async (req, res) => {
+  const { doBookingId, doDate, truckBookingId } = req.body;
+
+
+  const doAllocationExist = await Allocation.findOne({DOBookingId:doBookingId});
+  if (doAllocationExist) {
+    res.status(403);
+    throw new Error("This do is already allocated");
+  }
+
+ let doExist = await DOBooking.findById(doBookingId)
+
+ if(!doExist || doExist.status != "open"){
+  res.status(403);
+  throw new Error("Do not found or its not open");
+ }
+
+
+
+  //find truck bookings with conditions...................
+ 
+
+  let truckBooking = await TruckBooking.findById(truckBookingId);
+  if (!truckBooking) {
+    res.status(404);
+    throw new Error("truck not found");
+  }
+
+  if(truckBooking.availableFrom<doDate){
+    res.status(400);
+    throw new Error("truck is not available in the date");
+  }
+
+  if(truckBooking.status!="inqueue"){
+    res.status(400);
+    throw new Error("truck is not in the queue");
+  }
+
+  const newAllocation = await Allocation.create({
+    DOBookingId:doBookingId,
+    truckBookingId:truckBookingId
+  });
+
+  if(newAllocation){
+
+    doExist.status = "allocated"
+    await doExist.save();
+
+    truckBooking.status = "allocated"
+    await truckBooking.save()
+
+    res.status(201).json({
+      msg: "new allocation addded successfully",
+    });
+
+  }else{
+    res.status(400);
+    throw new Error("Invalid data for allocation");
+  }
+
+ 
+});
+
 
 
 const getAllocationDetails = AsyncHandler(async (req, res) => {

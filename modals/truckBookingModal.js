@@ -7,17 +7,10 @@ var truckBookingSchema = new Schema({
     required: true,
     ref: "Truck",
   },
-  // truckNumber: {
-  //   type: number,
-  //   required: true
-  // },
+
   availableFrom: {
     type: Date,
     required: true
-  },
-  endDate: {
-    type: Date,
-    // required: true
   },
   cancellationReason: {
     type: String,
@@ -34,8 +27,8 @@ var truckBookingSchema = new Schema({
   },
   status: {
     type: String,
-    default:'allocated',
-    enum: ['open', 'allocated', 'cancelled','live'],
+    default:'inqueue',
+    enum: ['inqueue', 'allocated', 'cancelled','expired','ongoing'],
     required: true
   }
 },{

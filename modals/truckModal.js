@@ -21,7 +21,7 @@ const truckSchema = mongoose.Schema(
       ref: "Driver",
       required: true,
     },
-    active: {
+    isActive: {
       type: Boolean,
       default:1
     },
@@ -33,11 +33,11 @@ const truckSchema = mongoose.Schema(
       type: Number,
       enum: [20, 40],
     },
-    status: {
-      type: String,
-      default:"inqueue",
-      enum: ["inqueue", "allocated", "ongoing", "offline"],
-    },
+    // status: {
+    //   type: String,
+    //   default:"inqueue",
+    //   enum: ["inqueue", "allocated", "ongoing", "offline"],
+    // },
   },
   {
     timestamps: true,

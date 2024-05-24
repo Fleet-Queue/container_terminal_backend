@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 var DOBookingSchema = new Schema({
-  itemName: {
-    type: String,
-    required: true
-  },
   partyId: {
     type: Schema.Types.ObjectId,
     ref: "Party",
