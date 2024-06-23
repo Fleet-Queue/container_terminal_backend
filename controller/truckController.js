@@ -6,13 +6,9 @@ import TruckBooking from "../modals/truckBookingModal.js"
 import Allocation from "../modals/allocationModal.js"
 
 const registerTruck = AsyncHandler(async (req, res) => {
-  const { name, registrationNumber, driverId,  category, truckType } =
+  const { name, registrationNumber, driverId,companyId,  category, truckType } =
     req.body;
-    if (!req.user.companyId) {
-      res.status(404);
-      throw new Error("Company Id not found");
-    }
-    let companyId = req.user.companyId
+    
   const truck = await Truck.findOne({ registrationNumber: registrationNumber });
   if (truck) {
     res.status(403);
@@ -126,12 +122,12 @@ const getTruckById = AsyncHandler(async (req, res) => {
 });
 
 const getAllTruck = AsyncHandler(async (req, res) => {
-  if (!req.user.companyId) {
-    res.status(404);
-    throw new Error("Company Id not found");
-  }
-  let queryCondition = { companyId: req.user.companyId };
+  
+  let queryCondition = { };
 
+  if(req.body.companyId){
+    queryCondition.companyId = req.body.companyId;
+  }
   if (req.body.isActive) {
     queryCondition.isActive = req.body.isActive;
   }
@@ -150,20 +146,21 @@ const getAllTruck = AsyncHandler(async (req, res) => {
 
 // getALLTRUCKBOOKING
 const getAllTruckBookings = AsyncHandler(async (req, res) => {
-  console.log("getAllTruckBookings")
+  
   //companyid , status,
   if (!req.user.companyId) {
     res.status(404);
     throw new Error("Company Id not found");
   }
-
+ 
+  
   let queryCondition = { };
 
   if (req.body.status) {
     queryCondition.status = req.body.status;
   }
 
-  const truckBooking = await TruckBooking.find(queryCondition).populate({
+  const truckBooking = await TruckBooking.find({...queryCondition, 'truck.companyId': req.user.companyId}).populate({
     path: 'truck',
     match: { companyId: req.user.companyId } // Filter based on 'companyId'
   });
@@ -205,12 +202,16 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
   //   throw new Error("Company Id not found");
   // }
 
-  
+  console.log(req.body)
 
-  const truckBooking = await TruckBooking.find({status:"inqueue"}).populate('truck')
-
-
-  
+  const truckBooking = await TruckBooking.find({status:"inqueue"})
+  .populate({
+    path: 'truck',
+    populate: {
+      path: 'companyId',
+     
+    }
+  })
 
   let filteredTruckBookings = truckBooking;
   if (req.body.type) {

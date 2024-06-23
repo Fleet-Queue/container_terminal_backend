@@ -31,9 +31,10 @@ const driverSchema = mongoose.Schema(
       required: true,
 
     },
+   
     licenceType: {
       type: String,
-      enum: ["LMV TT", "MPV", "MGV", "LMV", "MCWG", "MCWOG"],
+      required: true,
     },
     expiryDate: {
       type: Date,

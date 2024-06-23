@@ -3,9 +3,16 @@ import Party from "../modals/partyModal.js";
 import Location from "../modals/locationModal.js";
 import Company from "../modals/companyModal.js";
 
-const                                                                                                                                             registerParty = AsyncHandler(async (req, res) => {
-  const { name, address, isTrailerAllowed, locationId,contactPerson,contactNumber } = req.body;
-  const allocatedUserId = req.user._id
+const registerParty = AsyncHandler(async (req, res) => {
+  const {
+    name,
+    address,
+    isTrailerAllowed,
+    locationId,
+    contactPerson,
+    contactNumber,
+  } = req.body;
+  const allocatedUserId = req.user._id;
 
   if (!req.user.companyId) {
     res.status(404);
@@ -17,25 +24,21 @@ const                                                                           
     throw new Error("party exist with same name");
   }
 
-  
-
   const location = await Location.findById(locationId);
   if (!location) {
     res.status(403);
     throw new Error("location with this id not found");
   }
 
-
-
   const newParty = await Party.create({
     name,
     address,
     isTrailerAllowed,
     locationId,
-    companyId:req.user.companyId,
+    companyId: req.user.companyId,
     allocatedUserId,
     contactPerson,
-    contactNumber
+    contactNumber,
   });
 
   if (newParty) {
@@ -50,11 +53,17 @@ const                                                                           
 
 const getParty = AsyncHandler(async (req, res) => {
   const { name } = req.body;
-  const party = await Party.findOne({ name: name , companyId: req.user.companyId}).populate('locationId').populate('companyId').populate({
-    path: 'allocatedUserId',
-    select: '-password' // Exclude the "password" field from the populated "companyId"
-  });
-  
+  const party = await Party.findOne({
+    name: name,
+    companyId: req.user.companyId,
+  })
+    .populate("locationId")
+    .populate("companyId")
+    .populate({
+      path: "allocatedUserId",
+      select: "-password", // Exclude the "password" field from the populated "companyId"
+    });
+
   if (party) {
     res.status(201).json(party);
   } else {
@@ -63,9 +72,8 @@ const getParty = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const getAllParty = AsyncHandler(async (req, res) => {
-  const party = await Party.find({companyId: req.user.companyId});
+  const party = await Party.find({ companyId: req.user.companyId });
   if (party) {
     res.status(201).json(party);
   } else {
@@ -74,4 +82,4 @@ const getAllParty = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerParty, getParty,getAllParty };
+export { registerParty, getParty, getAllParty };

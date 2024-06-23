@@ -3,9 +3,91 @@ import DoBooking from "../modals/doBookingModal.js";
 import Party from "../modals/partyModal.js";
 import Company from "../modals/companyModal.js";
 import DOBooking from "../modals/doBookingModal.js";
+import DeliveryOrder from "../modals/deliveryOrderModal.js";
+
+
+
+
+const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
+  const { doLink,name } = req.body;
+
+  console.log("registerBooking")
+  console.log(req.body)
+
+  const company = await Company.findById(req.user.companyId);
+  if (!company) {
+    res.status(404);
+    throw new Error("company not found");
+  }
+
+  if(company.companyType === 'transporter'){
+    res.status(404);
+    throw new Error("its only transporter company, you cant upload do");
+  }
+
+  const newBooking = await DeliveryOrder.create({
+    "companyId":company._id,
+    doLink,
+    name
+  });
+
+  if (newBooking) {
+    res.status(201).json({
+      msg: "new DO uploaded successfully",
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid data");
+  }
+});
+
+const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
+  const companyId = req.body.companyId || req.user.companyId;
+  let queryCondition = {};
+
+  if (companyId) {
+    queryCondition = { companyId: companyId };
+  }
+
+  if (req.body.status) {
+    queryCondition.status = req.body.status;
+  }
+
+  const Dos = await DeliveryOrder.find(queryCondition);
+  const statusMapping = {
+    0: 'pending',
+    1: 'inqueue',
+    2: 'ongoing',
+    3: 'cancelled'
+  };
+
+  if (Dos) {
+    const transformedDos = Dos.map(doItem => {
+      const createdAtDate = new Date(doItem.createdAt);
+      const uploadDate = createdAtDate.toLocaleDateString('en-GB'); // Format as dd/mm/yyyy
+
+      return {
+        _id: doItem._id,
+        name: doItem.name,
+        companyId: doItem.companyId,
+        link: doItem.doLink,
+        status: statusMapping[doItem.status],
+        __v: doItem.__v,
+        uploadDate: uploadDate // Add the formatted date as uploadDate
+      };
+    });
+
+    res.status(201).json(transformedDos);
+  } else {
+    res.status(404);
+    throw new Error("Do's not found");
+  }
+});
 
 const registerBooking = AsyncHandler(async (req, res) => {
-  const { itemName,partyId, companyId, truckType, rate, availableFrom,autoBooking } = req.body;
+  const { partyId, truckType, rate, availableFrom,autoBooking } = req.body;
+  console.log("registerBooking")
+  console.log(req.body)
 //if autoBooking then auto allocate
   const party = await Party.findById(partyId);
   if (!party) {
@@ -13,7 +95,7 @@ const registerBooking = AsyncHandler(async (req, res) => {
     throw new Error("party not found");
   }
 
-  const company = await Company.findById(companyId);
+  const company = await Company.findById(req.user.companyId);
   if (!company) {
     res.status(404);
     throw new Error("company not found");
@@ -26,7 +108,7 @@ const registerBooking = AsyncHandler(async (req, res) => {
 
   const newBooking = await DoBooking.create({
     partyId,
-    companyId,
+    "companyId":company._id,
     truckType,
     rate,
     availableFrom,
@@ -56,6 +138,7 @@ const getDoById = AsyncHandler(async (req, res) => {
 
 ///party populate
 const getAllBooking = AsyncHandler(async (req, res) => {
+  console.log("getAllBooking>>>>>>>>>>>>>>>>>>>>>>>>>")
   let queryCondition = {
     companyId: req.user.companyId,
   };
@@ -75,5 +158,17 @@ const getAllBooking = AsyncHandler(async (req, res) => {
 });
 
 
+const deleteDo = AsyncHandler(async (req, res) => {
+  const { doId } = req.body;
+  const booking = await DOBooking.findByIdAndDelete(doId);
+  if (booking) {
+    res.status(201).json(booking);
+  } else {
+    res.status(404);
+    throw new Error("booking not found");
+  }
+});
 
-export { registerBooking, getDoById, getAllBooking };
+
+
+export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,getAllDeliveryOrder };

@@ -9,14 +9,11 @@ const registerDriver = AsyncHandler(async (req, res) => {
     address,
     licenceNumber,
     licenceType,
-    expiryDate
+    expiryDate,
+    companyId
   } = req.body;
 
-  if (!req.user.companyId) {
-    res.status(404);
-    throw new Error("Company Id not found");
-  }
-  let companyId = req.user.companyId
+  
 
   const driver = await Driver.findOne({ licenceNumber: licenceNumber });
   if (driver) {
@@ -62,6 +59,39 @@ const getDriverByName = AsyncHandler(async (req, res) => {
   }
 });
 
+
+const getAllDrivers = AsyncHandler(async (req, res) => {
+  const {companyId} = req.body;
+ let queryCondition = {};
+ if (companyId ) {
+  queryCondition = { companyId:companyId };
+}
+  const drivers = await Driver.find(queryCondition).populate("companyId")
+    if (drivers) {
+       
+        const transformedDrivers = drivers.map(driver => ({
+            _id: driver._id,
+            name: driver.name,
+            companyName: driver.companyId.name,
+            address: driver.address,
+            contactNumber: driver.contactNumber,
+            licenceNumber: driver.licenceNumber,
+            licenceType: driver.licenceType,
+            expiryDate: driver.expiryDate,
+            status: driver.status,
+            createdAt: driver.createdAt,
+            updatedAt: driver.updatedAt,
+            __v: driver.__v
+        }));
+      
+        res.status(201).json(transformedDrivers);
+  } else {
+    res.status(404);
+    throw new Error("No driver found");
+  }
+});
+
+
 const getDriverByPhone = AsyncHandler(async (req, res) => {
   const { contactNumber } = req.body;
   const driver = await Driver.findOne({ contactNumber: contactNumber });
@@ -76,16 +106,17 @@ const getDriverByPhone = AsyncHandler(async (req, res) => {
 
 
 const getCompanyDrivers = AsyncHandler(async (req, res) => {
+console.log(req.body)
   console.log("getCompanyDrivers")
-  if (!req.user.companyId) {
+  if (!req.body.companyId) {
     res.status(404);
     throw new Error("Company Id not found");
   }
-  let companyId = req.user.companyId
+  let companyId = req.body.companyId
   const drivers = await Driver.find({ companyId });
 
     res.status(201).json(drivers);
 
 });
 
-export { registerDriver, getDriverByName, getDriverByPhone,getCompanyDrivers };
+export { registerDriver, getDriverByName,getAllDrivers, getDriverByPhone,getCompanyDrivers };
