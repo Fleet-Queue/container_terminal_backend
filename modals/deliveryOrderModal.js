@@ -17,7 +17,7 @@ var DeliveryOrderSchema = new Schema({
   status: {
     type: Number,
     default: 0,
-    enum: [0, 1, 2], //0 open, 1 allocated, 2 canceled
+    enum: [0, 1, 2], //0 pending, 1 open, 2 allocated, 3 cancelled
     required: true
   }
 },{

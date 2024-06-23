@@ -73,7 +73,13 @@ const getParty = AsyncHandler(async (req, res) => {
 });
 
 const getAllParty = AsyncHandler(async (req, res) => {
-  const party = await Party.find({ companyId: req.user.companyId });
+  console.log(req.body)
+  let query = {}
+ let companyId = req.body.companyId || req.user.companyId;
+ if(companyId){
+  query.companyId = companyId;
+ }
+  const party = await Party.find(query);
   if (party) {
     res.status(201).json(party);
   } else {

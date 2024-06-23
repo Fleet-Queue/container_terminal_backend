@@ -48,12 +48,15 @@ const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
   if (companyId) {
     queryCondition = { companyId: companyId };
   }
-
-  if (req.body.status) {
+console.log(req.body)
+console.log(req.body.status)
+  if (req.body.status !== undefined) {
+    console.log("heyyy")
     queryCondition.status = req.body.status;
   }
-
+console.log(queryCondition);
   const Dos = await DeliveryOrder.find(queryCondition);
+  console.log(Dos)
   const statusMapping = {
     0: 'pending',
     1: 'inqueue',
@@ -85,9 +88,23 @@ const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
 });
 
 const registerBooking = AsyncHandler(async (req, res) => {
-  const { partyId, truckType, rate, availableFrom,autoBooking } = req.body;
+  const { partyId, truckType, rate, availableFrom,autoBooking,companyId, deliveryOrderId } = req.body;
   console.log("registerBooking")
   console.log(req.body)
+
+  //check for already exist deliveryOrder
+  const deliveryOrder = await DeliveryOrder.findById(deliveryOrderId);
+  if (!deliveryOrder) {
+    res.status(404);
+    throw new Error("Delivery order not found");
+  }
+
+  const doBooking = await DoBooking.findOne({deliveryOrderId});
+  if (doBooking) {
+    res.status(409);
+    throw new Error("DO Booking already created for this Delivery oder");
+  }
+
 //if autoBooking then auto allocate
   const party = await Party.findById(partyId);
   if (!party) {
@@ -95,26 +112,26 @@ const registerBooking = AsyncHandler(async (req, res) => {
     throw new Error("party not found");
   }
 
-  const company = await Company.findById(req.user.companyId);
+  const company = await Company.findById(companyId);
   if (!company) {
     res.status(404);
     throw new Error("company not found");
   }
 
-  if(company.companyType === 'transporter'){
-    res.status(404);
-    throw new Error("its only transporter company");
-  }
+
 
   const newBooking = await DoBooking.create({
     partyId,
-    "companyId":company._id,
+    companyId,
     truckType,
+    deliveryOrderId,
     rate,
     availableFrom,
   });
 
   if (newBooking) {
+    deliveryOrder.status = 1;
+    await deliveryOrder.save();
     res.status(201).json({
       msg: "new Booking Created successfully",
     });
@@ -138,10 +155,11 @@ const getDoById = AsyncHandler(async (req, res) => {
 
 ///party populate
 const getAllBooking = AsyncHandler(async (req, res) => {
-  console.log("getAllBooking>>>>>>>>>>>>>>>>>>>>>>>>>")
-  let queryCondition = {
-    companyId: req.user.companyId,
-  };
+  let queryCondition = { }
+   let companyId = req.body.companyId || req.user.companyId
+  if(companyId){
+  queryCondition.companyId = companyId
+  }
   if (req.body.status) {
     queryCondition.status = req.body.status;
   }

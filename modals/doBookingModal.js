@@ -4,14 +4,22 @@ var DOBookingSchema = new Schema({
   partyId: {
     type: Schema.Types.ObjectId,
     ref: "Party",
+    required: true
   },
   companyId: {
     type: Schema.Types.ObjectId,
     ref: "Company",
+    required: true
+  },
+  deliveryOrderId:{
+    type: Schema.Types.ObjectId,
+    ref: "DeliveryOrder",
+    required: true
   },
   truckType: {
     type: Number,
     enum: [20, 40],
+    required: true
   },
   rate: {
     type: Number,
