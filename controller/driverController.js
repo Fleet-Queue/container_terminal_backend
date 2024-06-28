@@ -63,7 +63,10 @@ const getDriverByName = AsyncHandler(async (req, res) => {
 const getAllDrivers = AsyncHandler(async (req, res) => {
   const {companyId} = req.body;
  let queryCondition = {};
- if (companyId ) {
+ console.log(req.user)
+ if(req.user.companyId){
+  queryCondition.companyId = req.user.companyId;
+}else if (companyId ) {
   queryCondition = { companyId:companyId };
 }
   const drivers = await Driver.find(queryCondition).populate("companyId")

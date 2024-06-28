@@ -33,7 +33,7 @@ var DOBookingSchema = new Schema({
   status: {
     type: String,
     default: 'open',
-    enum: ['open', 'allocated', 'cancelled'],
+    enum: ['open', 'allocated', 'cancelled','expired'],
     required: true
   }
 },{

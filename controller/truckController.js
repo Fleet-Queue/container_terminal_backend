@@ -125,7 +125,9 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   
   let queryCondition = { };
 
-  if(req.body.companyId){
+if(req.user.companyId){
+  queryCondition.companyId = req.user.companyId;
+}else if(req.body.companyId){
     queryCondition.companyId = req.body.companyId;
   }
   if (req.body.isActive) {
@@ -146,32 +148,37 @@ const getAllTruck = AsyncHandler(async (req, res) => {
 
 // getALLTRUCKBOOKING
 const getAllTruckBookings = AsyncHandler(async (req, res) => {
-  
+  console.log("getALlTruckBook")
+  console.log(req.body)
   //companyid , status,
   if (!req.user.companyId) {
     res.status(404);
     throw new Error("Company Id not found");
   }
  
-  
+   console.log(req.user.companyId);
   let queryCondition = { };
 
   if (req.body.status) {
     queryCondition.status = req.body.status;
   }
-
-  const truckBooking = await TruckBooking.find({...queryCondition, 'truck.companyId': req.user.companyId}).populate({
+ 
+  const truckBooking = await TruckBooking.find({...queryCondition}).populate({
     path: 'truck',
     match: { companyId: req.user.companyId } // Filter based on 'companyId'
   });
  
-console.log(truckBooking);
+  console.log(truckBooking)
 
+  const validTruckBookings = truckBooking.filter(tb => tb.truck !== null);
 
-const truckBookingIds = truckBooking.map(tb => tb._id);
+  console.log(validTruckBookings); // Output the filtered results to verify
+  
+const truckBookingIds = validTruckBookings.map(tb => tb._id);
 const allocations = await Allocation.find({ truckBookingId: { $in: truckBookingIds } });
-
-const results = await Promise.all(truckBooking.map(async tb => {
+console.log("----------------------------------allocations----------------------------------")
+console.log(allocations)
+const results = await Promise.all(validTruckBookings.map(async tb => {
   const allocation = allocations.find(allocation => allocation.truckBookingId.equals(tb._id));
   console.log(allocation);
   if (allocation) {

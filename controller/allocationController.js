@@ -1,6 +1,6 @@
 import AsyncHandler from "express-async-handler";
 import Location from "../modals/locationModal.js";
-import Truck from "../modals/truckModal.js";
+import DeliveryOrder from "../modals/deliveryOrderModal.js";
 import Allocation from "../modals/allocationModal.js";
 import TruckBooking from "../modals/truckBookingModal.js"
 import DOBooking from "../modals/doBookingModal.js";
@@ -14,6 +14,8 @@ const doAllocation = AsyncHandler(async (req, res) => {
     res.status(403);
     throw new Error("This do is already allocated");
   }
+ 
+ 
 
  let doExist = await DOBooking.findById(doBookingId)
 
@@ -22,6 +24,12 @@ const doAllocation = AsyncHandler(async (req, res) => {
   throw new Error("Do not found or its not open");
  }
 
+
+ const deliveryOrder = await DeliveryOrder.findById(doExist.deliveryOrderId)
+ if (!deliveryOrder) {
+   res.status(403);
+   throw new Error("This delivery order is not exist");
+ }
 
 
   
@@ -49,9 +57,12 @@ const doAllocation = AsyncHandler(async (req, res) => {
   });
 
   if(newAllocation){
-
+     
     doExist.status = "allocated"
     await doExist.save();
+
+    deliveryOrder.status = 2
+    await deliveryOrder.save();
 
     truckBooking.status = "allocated"
     await truckBooking.save()
