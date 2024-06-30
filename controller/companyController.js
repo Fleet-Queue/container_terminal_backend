@@ -48,6 +48,7 @@ const getCompany = AsyncHandler(async (req, res) => {
 
 
 const getAllCompany = AsyncHandler(async (req, res) => {
+
  const {companyTypes} = req.body;
  let queryCondition = {};
  if (companyTypes && Array.isArray(companyTypes) && companyTypes.length > 0) {
@@ -61,4 +62,28 @@ const getAllCompany = AsyncHandler(async (req, res) => {
     throw new Error("company not found");
   }
 });
-export { registerCompany, getCompany, getAllCompany };
+
+const deleteCompany = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+  console.log(req.body);
+  console.log(req.user)
+  if (!id) {
+    return res.status(400).json({ message: 'Company ID is required' });
+  }
+
+  try {
+    const company = await Company.findById(id);
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    await company.remove() // Delete the company
+
+    res.status(200).json({ message: 'Company deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+
+})
+export { registerCompany, getCompany, getAllCompany,deleteCompany };

@@ -14,6 +14,10 @@ var DeliveryOrderSchema = new Schema({
     required:true,
     type:String
   },
+  uniqueName:{
+    required:true,
+    type:String
+  },
   status: {
     type: Number,
     default: 0,

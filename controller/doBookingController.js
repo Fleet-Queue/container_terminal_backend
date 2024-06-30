@@ -9,7 +9,7 @@ import DeliveryOrder from "../modals/deliveryOrderModal.js";
 
 
 const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
-  const { doLink,name } = req.body;
+  const { doLink,name,uniqueName } = req.body;
 
   console.log("registerBooking")
   console.log(req.body)
@@ -28,7 +28,8 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
   const newBooking = await DeliveryOrder.create({
     "companyId":company._id,
     doLink,
-    name
+    name,
+    uniqueName
   });
 
   if (newBooking) {
@@ -73,6 +74,7 @@ console.log(queryCondition);
         _id: doItem._id,
         name: doItem.name,
         companyId: doItem.companyId,
+        uniqueName: doItem.uniqueName,
         link: doItem.doLink,
         status: statusMapping[doItem.status],
         __v: doItem.__v,
@@ -155,10 +157,10 @@ const getDoById = AsyncHandler(async (req, res) => {
 
 ///party populate
 const getAllBooking = AsyncHandler(async (req, res) => {
-  let queryCondition = { }
-   let companyId = req.body.companyId || req.user.companyId
-  if(companyId){
-  queryCondition.companyId = companyId
+  let queryCondition = {};
+  let companyId = req.body.companyId || req.user.companyId;
+  if (companyId) {
+    queryCondition.companyId = companyId;
   }
   if (req.body.status) {
     queryCondition.status = req.body.status;
@@ -166,12 +168,22 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   if (req.body.partyId) {
     queryCondition.partyId = req.body.partyId;
   }
-  const bookings = await DoBooking.find(queryCondition).populate("partyId")
-  if (bookings) {
-    res.status(201).json(bookings);
+  
+  // Fetch bookings and populate 'partyId'
+  const bookings = await DoBooking.find(queryCondition).populate("partyId").populate("deliveryOrderId")
+
+  // Map over bookings to format the date
+  const formattedBookings = bookings.map(booking => ({
+    ...booking.toObject(),
+    availableFrom: new Date(booking.availableFrom).toLocaleDateString('en-GB') // Change locale as needed
+  }));
+
+  console.log(formattedBookings);
+  
+  if (formattedBookings.length > 0) {
+    res.status(200).json(formattedBookings);
   } else {
-    res.status(404);
-    throw new Error("bookings not found");
+    res.status(404).json({ message: "Bookings not found" });
   }
 });
 
@@ -188,5 +200,19 @@ const deleteDo = AsyncHandler(async (req, res) => {
 });
 
 
+const deleteDeliveryOrder = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+  console.log("-------------------------------------------------------------------heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyys...")
+  console.log(req.params)
 
-export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,getAllDeliveryOrder };
+  const doOrder = await DeliveryOrder.findByIdAndDelete(id);
+  if (doOrder) {
+    res.status(201).json(doOrder);
+  } else {
+    res.status(404);
+    throw new Error("delivery order not found");
+  }
+});
+
+
+export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,getAllDeliveryOrder,deleteDeliveryOrder };

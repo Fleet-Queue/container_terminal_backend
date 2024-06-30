@@ -17,7 +17,7 @@ var allocationSchema = new Schema({
   status: {
     type: String,
     default:"allocated",
-    enum: ['open', 'allocated', 'cancelled'],
+    enum: ['open', 'allocated','ongoing','expired', 'cancelled'],
     required: true
   }
 },{

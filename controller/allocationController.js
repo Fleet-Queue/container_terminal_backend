@@ -151,7 +151,6 @@ const doAutoAllocation = AsyncHandler(async (req, res) => {
 const getAllocationDetails = AsyncHandler(async (req, res) => {
   const { doBookingId } = req.body;
 
-
   const doAllocation = await Allocation.findOne({ DOBookingId: doBookingId })
   .populate({
     path: 'truckBookingId',
@@ -180,7 +179,67 @@ const getAllocationDetails = AsyncHandler(async (req, res) => {
 
 });
 
+const changeAllocationStatus = AsyncHandler(async (req, res) => {
+  let { status, allocId } = req.body;
+  
+  // Validate status
+  if (status != "ongoing" && status != "done") {
+    res.status(400);
+    throw new Error("Invalid status for allocation");
+  }
+
+  // Find allocation and populate related fields
+  const allocation = await Allocation.findById(allocId).populate({
+    path: 'truckBookingId',
+    populate: {
+      path: 'truck',
+      populate: [
+        { path: 'companyId', select: '-createdAt -updatedAt -__v' },
+        { path: 'driverId', select: '-createdAt -updatedAt -__v' }
+      ]
+    }
+  }).populate('DOBookingId');
+
+  // Check if allocation exists
+  if (!allocation) {
+    res.status(404);
+    throw new Error("Allocation not found");
+  }
+
+  // Determine the new status values
+  let newAllocationStatus;
+  let newTruckBookingStatus;
+  let newDOBookingStatus;
+
+  if (status === "ongoing") {
+    newAllocationStatus = "ongoing";
+    newTruckBookingStatus = "ongoing";
+  } else if (status === "done") {
+    newAllocationStatus = "expired";
+    newTruckBookingStatus = "expired";
+    newDOBookingStatus = "expired";
+  }
+
+  // Update the statuses
+  allocation.status = newAllocationStatus;
+  allocation.truckBookingId.status = newTruckBookingStatus;
+
+  if (status === "done" && allocation.DOBookingId) {
+    allocation.DOBookingId.status = newDOBookingStatus;
+    await allocation.DOBookingId.save();
+  }
+
+  // Save the changes
+  await allocation.save();
+  await allocation.truckBookingId.save();
+
+  // Send a success response
+  res.status(200).json({
+    message: "Status updated successfully",
+    allocation,
+  });
+});
 
 
 
-export { doAllocation,getAllocationDetails };
+export { doAllocation,getAllocationDetails,changeAllocationStatus};

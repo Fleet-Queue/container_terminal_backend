@@ -176,8 +176,8 @@ const getAllTruckBookings = AsyncHandler(async (req, res) => {
   
 const truckBookingIds = validTruckBookings.map(tb => tb._id);
 const allocations = await Allocation.find({ truckBookingId: { $in: truckBookingIds } });
-console.log("----------------------------------allocations----------------------------------")
-console.log(allocations)
+
+
 const results = await Promise.all(validTruckBookings.map(async tb => {
   const allocation = allocations.find(allocation => allocation.truckBookingId.equals(tb._id));
   console.log(allocation);
