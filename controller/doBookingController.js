@@ -45,7 +45,7 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
 const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
   const companyId = req.body.companyId || req.user.companyId;
   let queryCondition = {};
-
+  
   if (companyId) {
     queryCondition = { companyId: companyId };
   }
