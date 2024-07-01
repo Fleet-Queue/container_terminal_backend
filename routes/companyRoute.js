@@ -3,7 +3,8 @@ import {
   registerCompany,
   getCompany,
   getAllCompany,
-  deleteCompany
+  deleteCompany,
+  updateCompany
 } from "../controller/companyController.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import { errorHandler } from "../middlewares/errorMiddleware.js";
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.route("/").post(registerCompany)
 router.route("/:id").delete(deleteCompany)
+router.route("/:id").patch(updateCompany)
 router.route("/getCompany").post(protect, getCompany);
 router.route("/getAllCompany").post(protect, getAllCompany);
 

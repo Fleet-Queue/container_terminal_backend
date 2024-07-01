@@ -63,8 +63,39 @@ const getAllCompany = AsyncHandler(async (req, res) => {
   }
 });
 
-const deleteCompany = AsyncHandler(async (req, res) => {
+
+const updateCompany = AsyncHandler(async (req, res) => {
   const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: 'Company ID is required' });
+  }
+
+  try {
+    const updatedCompany = await Company.findByIdAndUpdate(id, req.body, {
+      new: true, // return the updated document rather than the original
+      runValidators: true, // run schema validators
+    });
+
+    if (!updatedCompany) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    res.status(200).json({
+      message: 'Company updated successfully',
+      company: updatedCompany,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+
+
+const deleteCompany = AsyncHandler(async (req, res) => {
+  console.log("heeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+  const { id } = req.params;
+  console.log(id)
   console.log(req.body);
   console.log(req.user)
   if (!id) {
@@ -72,13 +103,13 @@ const deleteCompany = AsyncHandler(async (req, res) => {
   }
 
   try {
-    const company = await Company.findById(id);
-
+    const company = await Company.findByIdAndDelete(id);
+console.log(company)
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
 
-    await company.remove() // Delete the company
+
 
     res.status(200).json({ message: 'Company deleted successfully' });
   } catch (error) {
@@ -86,4 +117,4 @@ const deleteCompany = AsyncHandler(async (req, res) => {
   }
 
 })
-export { registerCompany, getCompany, getAllCompany,deleteCompany };
+export { registerCompany, getCompany,updateCompany, getAllCompany,deleteCompany };
