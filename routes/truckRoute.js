@@ -9,7 +9,8 @@ import {
  addTruckToBooking,
  updateTruckBookingStatus,
  getAllInqueTrucks,
- getAllTruckBookings
+ getAllTruckBookings,
+ updateTruck
 } from "../controller/truckController.js";
 import { protect, protectRefreshToken } from "../middlewares/authMiddleware.js";
 import { errorHandler } from "../middlewares/errorMiddleware.js"; // Assuming you have an error handling middleware
@@ -26,7 +27,8 @@ router.route("/updateTruckBookingStatus").post(protect, updateTruckBookingStatus
 router.route("/getInQueueTrucks").post(protect, getAllInqueTrucks);
 // router.route("/getAllTruckBookig").post(protect, getAllInqueTrucks);
 router.route("/getAllTruckBookings").post(protect, getAllTruckBookings);
-router.route("/deleteTruck").post(protect, deleteTruck);
+router.route("/:id").delete(deleteTruck)
+router.route("/:id").patch(updateTruck)
 // Error handling middleware
 router.use(errorHandler);
 export default router;

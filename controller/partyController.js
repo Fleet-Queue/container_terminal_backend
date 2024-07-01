@@ -88,4 +88,51 @@ const getAllParty = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerParty, getParty, getAllParty };
+
+const updateParty = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: "Party ID is required" });
+  }
+
+  try {
+    const updatedParty = await Party.findByIdAndUpdate(id, req.body, {
+      new: true, // return the updated document rather than the original
+      runValidators: true, // run schema validators
+    });
+
+    if (!updatedParty) {
+      return res.status(404).json({ message: "Party not found" });
+    }
+
+    res.status(200).json({
+      message: "Party updated successfully",
+      company: updatedParty,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+const deleteParty = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: "Party ID is required" });
+  }
+
+  try {
+    const party = await Party.findByIdAndDelete(id);
+
+    if (!party) {
+      return res.status(404).json({ message: "Party not found" });
+    }
+
+    res.status(200).json({ message: "Party deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+export { registerParty, getParty, getAllParty,deleteParty,updateParty };
