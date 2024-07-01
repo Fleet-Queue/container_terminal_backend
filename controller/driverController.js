@@ -10,10 +10,8 @@ const registerDriver = AsyncHandler(async (req, res) => {
     licenceNumber,
     licenceType,
     expiryDate,
-    companyId
+    companyId,
   } = req.body;
-
-  
 
   const driver = await Driver.findOne({ licenceNumber: licenceNumber });
   if (driver) {
@@ -22,10 +20,10 @@ const registerDriver = AsyncHandler(async (req, res) => {
   }
 
   const company = await Company.findById(companyId);
-    if(!company){
-      res.status(400);
-      throw new Error("Company not Found");
-    }
+  if (!company) {
+    res.status(400);
+    throw new Error("Company not Found");
+  }
 
   const newDriver = await Driver.create({
     name,
@@ -34,7 +32,7 @@ const registerDriver = AsyncHandler(async (req, res) => {
     licenceNumber,
     licenceType,
     expiryDate,
-    companyId
+    companyId,
   });
 
   if (newDriver) {
@@ -59,41 +57,38 @@ const getDriverByName = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const getAllDrivers = AsyncHandler(async (req, res) => {
-  const {companyId} = req.body;
- let queryCondition = {};
- console.log(req.user)
- if(req.user.companyId){
-  queryCondition.companyId = req.user.companyId;
-}else if (companyId ) {
-  queryCondition = { companyId:companyId };
-}
-  const drivers = await Driver.find(queryCondition).populate("companyId")
-    if (drivers) {
-       
-        const transformedDrivers = drivers.map(driver => ({
-            _id: driver._id,
-            name: driver.name,
-            companyName: driver.companyId.name,
-            address: driver.address,
-            contactNumber: driver.contactNumber,
-            licenceNumber: driver.licenceNumber,
-            licenceType: driver.licenceType,
-            expiryDate: driver.expiryDate,
-            status: driver.status,
-            createdAt: driver.createdAt,
-            updatedAt: driver.updatedAt,
-            __v: driver.__v
-        }));
-      
-        res.status(201).json(transformedDrivers);
+  const { companyId } = req.body;
+  let queryCondition = {};
+  console.log(req.user);
+  if (req.user.companyId) {
+    queryCondition.companyId = req.user.companyId;
+  } else if (companyId) {
+    queryCondition = { companyId: companyId };
+  }
+  const drivers = await Driver.find(queryCondition).populate("companyId");
+  if (drivers) {
+    const transformedDrivers = drivers.map((driver) => ({
+      _id: driver._id,
+      name: driver.name,
+      companyName: driver.companyId.name,
+      address: driver.address,
+      contactNumber: driver.contactNumber,
+      licenceNumber: driver.licenceNumber,
+      licenceType: driver.licenceType,
+      expiryDate: driver.expiryDate,
+      status: driver.status,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt,
+      __v: driver.__v,
+    }));
+
+    res.status(201).json(transformedDrivers);
   } else {
     res.status(404);
     throw new Error("No driver found");
   }
 });
-
 
 const getDriverByPhone = AsyncHandler(async (req, res) => {
   const { contactNumber } = req.body;
@@ -107,19 +102,73 @@ const getDriverByPhone = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const getCompanyDrivers = AsyncHandler(async (req, res) => {
-console.log(req.body)
-  console.log("getCompanyDrivers")
+
   if (!req.body.companyId) {
     res.status(404);
     throw new Error("Company Id not found");
   }
-  let companyId = req.body.companyId
+  let companyId = req.body.companyId;
   const drivers = await Driver.find({ companyId });
 
-    res.status(201).json(drivers);
-
+  res.status(201).json(drivers);
 });
 
-export { registerDriver, getDriverByName,getAllDrivers, getDriverByPhone,getCompanyDrivers };
+
+
+
+const updateDriver = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: "Driver ID is required" });
+  }
+
+  try {
+    const updatedDriver = await Driver.findByIdAndUpdate(id, req.body, {
+      new: true, // return the updated document rather than the original
+      runValidators: true, // run schema validators
+    });
+
+    if (!updatedDriver) {
+      return res.status(404).json({ message: "Driver not found" });
+    }
+
+    res.status(200).json({
+      message: "Driver updated successfully",
+      company: updatedDriver,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+const deleteDriver = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: "Driver ID is required" });
+  }
+
+  try {
+    const driver = await Driver.findByIdAndDelete(id);
+
+    if (!driver) {
+      return res.status(404).json({ message: "Driver not found" });
+    }
+
+    res.status(200).json({ message: "Driver deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+export {
+  registerDriver,
+  getDriverByName,
+  getAllDrivers,
+  getDriverByPhone,
+  getCompanyDrivers,
+  updateDriver,
+  deleteDriver
+};

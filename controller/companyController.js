@@ -1,28 +1,29 @@
 import AsyncHandler from "express-async-handler";
 import Company from "../modals/companyModal.js";
 
-
 const registerCompany = AsyncHandler(async (req, res) => {
-  const { name, ownerName, contactNumber, address,companyType } = req.body;
-//only admin can add
+  const { name, ownerName, contactNumber, address, companyType } = req.body;
+  //only admin can add
   const company = await Company.findOne({ name: name });
   if (company) {
     res.status(403);
     throw new Error("company exist with same name");
   }
 
-  const isMobNumberExist = await Company.findOne({ contactNumber: contactNumber });
+  const isMobNumberExist = await Company.findOne({
+    contactNumber: contactNumber,
+  });
   if (isMobNumberExist) {
     res.status(403);
     throw new Error("another company exist with same Contact Number");
   }
 
   const newCompany = await Company.create({
-    name, 
-    ownerName, 
-    contactNumber, 
+    name,
+    ownerName,
+    contactNumber,
     address,
-    companyType
+    companyType,
   });
 
   if (newCompany) {
@@ -46,14 +47,12 @@ const getCompany = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const getAllCompany = AsyncHandler(async (req, res) => {
-
- const {companyTypes} = req.body;
- let queryCondition = {};
- if (companyTypes && Array.isArray(companyTypes) && companyTypes.length > 0) {
-  queryCondition = { companyType: { $in: companyTypes } };
-}
+  const { companyTypes } = req.body;
+  let queryCondition = {};
+  if (companyTypes && Array.isArray(companyTypes) && companyTypes.length > 0) {
+    queryCondition = { companyType: { $in: companyTypes } };
+  }
   const company = await Company.find(queryCondition);
   if (company) {
     res.status(201).json(company);
@@ -63,12 +62,11 @@ const getAllCompany = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const updateCompany = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
-    return res.status(400).json({ message: 'Company ID is required' });
+    return res.status(400).json({ message: "Company ID is required" });
   }
 
   try {
@@ -78,43 +76,41 @@ const updateCompany = AsyncHandler(async (req, res) => {
     });
 
     if (!updatedCompany) {
-      return res.status(404).json({ message: 'Company not found' });
+      return res.status(404).json({ message: "Company not found" });
     }
 
     res.status(200).json({
-      message: 'Company updated successfully',
+      message: "Company updated successfully",
       company: updatedCompany,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-
-
 const deleteCompany = AsyncHandler(async (req, res) => {
-  console.log("heeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
   const { id } = req.params;
-  console.log(id)
-  console.log(req.body);
-  console.log(req.user)
+
   if (!id) {
-    return res.status(400).json({ message: 'Company ID is required' });
+    return res.status(400).json({ message: "Company ID is required" });
   }
 
   try {
     const company = await Company.findByIdAndDelete(id);
-console.log(company)
+
     if (!company) {
-      return res.status(404).json({ message: 'Company not found' });
+      return res.status(404).json({ message: "Company not found" });
     }
 
-
-
-    res.status(200).json({ message: 'Company deleted successfully' });
+    res.status(200).json({ message: "Company deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-
-})
-export { registerCompany, getCompany,updateCompany, getAllCompany,deleteCompany };
+});
+export {
+  registerCompany,
+  getCompany,
+  updateCompany,
+  getAllCompany,
+  deleteCompany,
+};
