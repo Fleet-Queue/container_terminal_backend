@@ -58,6 +58,10 @@ const limiter = rateLimit({
   },
 });
 
+app.get('/', (req, res) => {
+  res.send('Welcome to the FleetQ API!'); // Change this text to whatever you want
+});
+
 app.use(['/api/user/login', '/api/admin/login'], limiter);
  app.use('/api/user',userRouter)
  app.use('/api/driver',driverRouter)
