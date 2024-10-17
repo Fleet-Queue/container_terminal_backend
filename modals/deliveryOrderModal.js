@@ -14,20 +14,31 @@ var DeliveryOrderSchema = new Schema({
     required:true,
     type:String
   },
+  fileName:{
+    required:true,
+    type:String
+  },
   uniqueName:{
     required:true,
     type:String
   },
+  doNumber: {
+    type: String, // Add the DO number field
+    required: true,
+    unique: true  // Ensure it's unique
+  },
   status: {
     type: Number,
     default: 0,
-    enum: [0, 1, 2], //0 pending, 1 open, 2 allocated, 3 cancelled
+    enum: [0, 1, 2, 3, 4, 5, 6], //0 open, 1 inqueue, 2 allocated, 3 ongoing, 4 - completed, 5 - rejected, 6 - cancelled
     required: true
   }
 },{
   timestamps: true,
 });
 
-const DeliveryOrder = mongoose.model("DeliveryOrder", DeliveryOrderSchema);
+const 
+
+DeliveryOrder = mongoose.model("DeliveryOrder", DeliveryOrderSchema);
 
 export default DeliveryOrder;

@@ -9,7 +9,7 @@ import DeliveryOrder from "../modals/deliveryOrderModal.js";
 
 
 const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
-  const { doLink,name,uniqueName } = req.body;
+  const { doLink,name,uniqueName,fileName } = req.body;
 
   console.log("registerBooking")
   console.log(req.body)
@@ -25,12 +25,29 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("its only transporter company, you cant upload do");
   }
 
-  const newBooking = await DeliveryOrder.create({
-    "companyId":company._id,
-    doLink,
-    name,
-    uniqueName
-  });
+  const lastOrder = await DeliveryOrder.findOne({ companyId: company._id })
+  .sort({ doNumber: -1 }) 
+  .select('doNumber'); 
+
+
+ let newOrderNumber;
+ if (lastOrder) {
+
+   const lastNumber = parseInt(lastOrder.doNumber.split('-')[1], 10);
+   newOrderNumber = `DO-${lastNumber + 1}`; 
+ } else {
+   newOrderNumber = 'DO-1'; 
+ }
+
+ // Create a new delivery order
+ const newBooking = await DeliveryOrder.create({
+   companyId: company._id,
+   doLink,
+   name,
+   uniqueName,
+   fileName,
+   doNumber: newOrderNumber
+ });
 
   if (newBooking) {
     res.status(201).json({
@@ -55,9 +72,8 @@ console.log(req.body.status)
     console.log("heyyy")
     queryCondition.status = req.body.status;
   }
-console.log(queryCondition);
-  const Dos = await DeliveryOrder.find(queryCondition);
-  console.log(Dos)
+
+  const Dos = await DeliveryOrder.find(queryCondition).sort({ createdAt: -1 });
   const statusMapping = {
     0: 'pending',
     1: 'inqueue',
@@ -76,6 +92,7 @@ console.log(queryCondition);
         companyId: doItem.companyId,
         uniqueName: doItem.uniqueName,
         link: doItem.doLink,
+        fileName: doItem.fileName,
         status: statusMapping[doItem.status],
         __v: doItem.__v,
         uploadDate: uploadDate // Add the formatted date as uploadDate
@@ -175,7 +192,7 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   // Map over bookings to format the date
   const formattedBookings = bookings.map(booking => ({
     ...booking.toObject(),
-    availableFrom: new Date(booking.availableFrom).toLocaleDateString('en-GB') // Change locale as needed
+    availableFrom: new Date(booking.availableFrom).toLocaleDateString('en-GB') 
   }));
 
   console.log(formattedBookings);
