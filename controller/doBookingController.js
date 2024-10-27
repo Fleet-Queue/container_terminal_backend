@@ -9,7 +9,7 @@ import DeliveryOrder from "../modals/deliveryOrderModal.js";
 
 
 const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
-  const { doLink,name,uniqueName,fileName } = req.body;
+  const { doLink,name,uniqueName,fileName,availableFrom,type } = req.body;
 
   console.log("registerBooking")
   console.log(req.body)
@@ -25,20 +25,38 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("its only transporter company, you cant upload do");
   }
 
-  const lastOrder = await DeliveryOrder.findOne({ companyId: company._id })
-  .sort({ doNumber: -1 }) 
-  .select('doNumber'); 
+  const lastOrder = await DeliveryOrder.aggregate([
+    {
+      $project: {
+        doNumber: 1,
+        numericDoNumber: {
+          $toInt: {
+            $substr: ['$doNumber', 3, -1]
+          }
+        }
+      }
+    },
+    {
+      $sort: { numericDoNumber: -1 } 
+    },
+    {
+      $limit: 1 
+    }
+  ]);
 
 
  let newOrderNumber;
- if (lastOrder) {
+ if (lastOrder && lastOrder.length > 0) {
+  console.log("last order indddddddddddddddddddddddddddd")
+  console.log(lastOrder)
 
-   const lastNumber = parseInt(lastOrder.doNumber.split('-')[1], 10);
-   newOrderNumber = `DO-${lastNumber + 1}`; 
+   console.log(lastOrder.numericDoNumber)
+   console.log(lastOrder[0].numericDoNumber)
+   newOrderNumber = `DO-${lastOrder[0].numericDoNumber + 1}`; 
  } else {
    newOrderNumber = 'DO-1'; 
  }
-
+console.log(newOrderNumber)
  // Create a new delivery order
  const newBooking = await DeliveryOrder.create({
    companyId: company._id,
@@ -46,7 +64,9 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
    name,
    uniqueName,
    fileName,
-   doNumber: newOrderNumber
+   doNumber: newOrderNumber,
+   availableFrom:availableFrom,
+   type:type
  });
 
   if (newBooking) {
@@ -58,6 +78,106 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("Invalid data");
   }
 });
+
+
+
+const updateDeliveryOrder = AsyncHandler(async (req, res) => {
+  const { id } = req.params; // Get the ID from request parameters
+  const { doLink, name, uniqueName, fileName,type,availableFrom } = req.body;
+
+  console.log("updateDeliveryOrder");
+  console.log(req.body);
+
+  const company = await Company.findById(req.user.companyId);
+  if (!company) {
+    res.status(404);
+    throw new Error("Company not found");
+  }
+
+  if (company.companyType === 'transporter') {
+    res.status(403); 
+    throw new Error("It's only a transporter company, you can't upload DO");
+  }
+
+
+  const existingOrder = await DeliveryOrder.findById(id);
+  if (!existingOrder) {
+    res.status(404);
+    throw new Error("Delivery order not found");
+  }
+
+  // Update the delivery order fields
+  existingOrder.doLink = doLink || existingOrder.doLink; // Update only if provided
+  existingOrder.name = name || existingOrder.name; // Update only if provided
+  existingOrder.uniqueName = uniqueName || existingOrder.uniqueName; // Update only if provided
+  existingOrder.fileName = fileName || existingOrder.fileName; // Update only if provided
+  existingOrder.availableFrom = fileName || existingOrder.availableFrom;
+  existingOrder.type = type || existingOrder.type;
+  // Save the updated delivery order
+  const updatedOrder = await existingOrder.save();
+
+  if (updatedOrder) {
+    res.status(200).json({
+      msg: "Delivery order updated successfully",
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid data for update");
+  }
+});
+
+
+
+const CancelDeliveryOrder = AsyncHandler(async (req, res) => {
+  const { id } = req.params; // Get the ID from request parameters
+  const { cancelReason } = req.body; // Get cancel reason from request body
+
+  // Check if cancelReason is provided
+  if (!cancelReason) {
+    res.status(400);
+    throw new Error("Cancel reason is mandatory.");
+  }
+
+  const company = await Company.findById(req.user.companyId);
+  // if (!company) {
+  //   res.status(404);
+  //   throw new Error("Company not found");
+  // }
+if(company){
+  if (company.companyType === 'transporter') {
+    res.status(403);
+    throw new Error("It's only a transporter company, you can't upload DO");
+  }
+}
+
+
+  const existingOrder = await DeliveryOrder.findById(id);
+  if (!existingOrder) {
+    res.status(404);
+    throw new Error("Delivery order not found");
+  }
+
+if(company){
+  existingOrder.status = 6; 
+}else{
+  existingOrder.status = 5; 
+}
+  
+  existingOrder.cancelReason = cancelReason; 
+
+  const updatedOrder = await existingOrder.save();
+
+  if (updatedOrder) {
+    res.status(200).json({
+      msg: "Delivery order canceled successfully",
+      order: updatedOrder 
+    });
+  } else {
+    res.status(400);
+    throw new Error("Failed to cancel the delivery order");
+  }
+});
+
 
 const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
   const companyId = req.body.companyId || req.user.companyId;
@@ -77,20 +197,27 @@ console.log(req.body.status)
   const statusMapping = {
     0: 'pending',
     1: 'inqueue',
-    2: 'ongoing',
-    3: 'cancelled'
+    2: 'allocated',
+    3: 'ongoing',
+    4: 'completed',
+    5: 'rejected',
+    6: 'cancelled'
   };
-
   if (Dos) {
     const transformedDos = Dos.map(doItem => {
       const createdAtDate = new Date(doItem.createdAt);
       const uploadDate = createdAtDate.toLocaleDateString('en-GB'); // Format as dd/mm/yyyy
-
+      const availableFrom = doItem.availableFrom.toLocaleDateString('en-GB')
+      console.log(statusMapping[doItem.status])
       return {
         _id: doItem._id,
         name: doItem.name,
         companyId: doItem.companyId,
         uniqueName: doItem.uniqueName,
+        availableFrom:availableFrom,
+        cancelReason: doItem.cancelReason,
+        doNumber:doItem.doNumber,
+        type: doItem.type,
         link: doItem.doLink,
         fileName: doItem.fileName,
         status: statusMapping[doItem.status],
@@ -108,6 +235,11 @@ console.log(req.body.status)
 
 const registerBooking = AsyncHandler(async (req, res) => {
   const { partyId, truckType, rate, availableFrom,autoBooking,companyId, deliveryOrderId } = req.body;
+  
+  if (req.user.companyId) {
+    res.status(404);
+    throw new Error("dont have access to make booking");
+  }
   console.log("registerBooking")
   console.log(req.body)
 
@@ -200,7 +332,7 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   if (formattedBookings.length > 0) {
     res.status(200).json(formattedBookings);
   } else {
-    res.status(404).json({ message: "Bookings not found" });
+    res.status(200).json([]);;
   }
 });
 
@@ -232,4 +364,4 @@ const deleteDeliveryOrder = AsyncHandler(async (req, res) => {
 });
 
 
-export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,getAllDeliveryOrder,deleteDeliveryOrder };
+export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,CancelDeliveryOrder,updateDeliveryOrder,getAllDeliveryOrder,deleteDeliveryOrder };

@@ -206,12 +206,7 @@ const getAllTruckBookings = AsyncHandler(async (req, res) => {
 });
 
 const getAllInqueTrucks = AsyncHandler(async (req, res) => {
-  // if (!req.user.companyId) {
-  //   res.status(404);
-  //   throw new Error("Company Id not found");
-  // }
 
-  console.log(req.body);
 
   const truckBooking = await TruckBooking.find({ status: "inqueue" }).populate({
     path: "truck",
@@ -221,25 +216,34 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
   });
 
   let filteredTruckBookings = truckBooking;
+
   if (req.body.type) {
-    filteredTruckBookings = truckBooking.filter(
+    filteredTruckBookings = filteredTruckBookings.filter(
       (tb) => tb.truck.truckType === req.body.type
     );
   }
-
+  
   if (req.body.date) {
-    filteredTruckBookings.filter((tb) => {
+    const dateParts = req.body.date.split('/');
+    const requestDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+  
+    filteredTruckBookings = filteredTruckBookings.filter((tb) => {
       const bookingDate = new Date(tb.availableFrom);
-      return bookingDate >= req.body.date;
+      console.log("DO Date:", requestDate);
+      console.log("availableFrom:", bookingDate);
+
+      return bookingDate <= requestDate;
     });
   }
-
-  if (filteredTruckBookings) {
+  
+  console.log("Filtered Truck Bookings:", filteredTruckBookings);
+  
+  if (filteredTruckBookings.length > 0) {
     res.status(201).json(filteredTruckBookings);
   } else {
-    res.status(404);
-    throw new Error("no trucks found");
+    res.status(200).json([]);
   }
+  
 });
 
 const updateStatus = AsyncHandler(async (req, res) => {

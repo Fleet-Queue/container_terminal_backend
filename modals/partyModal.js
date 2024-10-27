@@ -13,6 +13,10 @@ var PartySchema = new Schema({
     type: Boolean,
     required: true
   },
+  status: {
+    type:Boolean,
+    default:true,
+  },
   locationId: {
     type: Schema.Types.ObjectId,
     ref: "Location",

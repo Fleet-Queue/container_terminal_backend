@@ -22,10 +22,18 @@ var DeliveryOrderSchema = new Schema({
     required:true,
     type:String
   },
+  cancelReason: { type: String},
   doNumber: {
     type: String, // Add the DO number field
     required: true,
     unique: true  // Ensure it's unique
+  },
+  availableFrom: {
+    default: Date.now, 
+    type: Date,
+  },
+  type:{
+    type:Number
   },
   status: {
     type: Number,

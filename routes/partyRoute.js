@@ -5,6 +5,7 @@ import {
  getAllParty,
  deleteParty,
  updateParty,
+ updatePartyStatus
 } from "../controller/partyController.js";
 
 import { protect, protectRefreshToken } from "../middlewares/authMiddleware.js";
@@ -15,7 +16,8 @@ const router = express.Router();
 router.route("/").post(protect,registerParty);
 router.route("/getPartyByName").post(protect, getParty);
 router.route("/getAllParty").post(protect, getAllParty);
-router.route("/:id").delete(deleteParty)
-router.route("/:id").patch(updateParty)
+router.route("/:id").delete(protect,deleteParty)
+router.route("/:id").post(protect,updateParty)
+router.route("/updateStatus/:id").put(protect,updatePartyStatus)
 router.use(errorHandler);
 export default router;

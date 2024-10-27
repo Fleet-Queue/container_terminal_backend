@@ -5,8 +5,10 @@ import {
     getAllBooking,
     deleteDo,
     uploadDeliveryOrder,
+    updateDeliveryOrder,
     getAllDeliveryOrder,
-    deleteDeliveryOrder
+    deleteDeliveryOrder,
+    CancelDeliveryOrder
 } from "../controller/doBookingController.js";
 import { protect, protectRefreshToken } from "../middlewares/authMiddleware.js";
 import { errorHandler } from "../middlewares/errorMiddleware.js";
@@ -15,6 +17,8 @@ const router = express.Router();
 
 router.route("/").post(protect,registerBooking).delete(protect, deleteDo);
 router.route("/uploadDO").post(protect,uploadDeliveryOrder)
+router.route("/updateDO/:id").put(protect, updateDeliveryOrder);
+router.route("/cancelDO/:id").post(protect, CancelDeliveryOrder);
 router.route("/getDoById").post(protect, getDoById);
 router.route("/getAllDO").post(protect, getAllBooking);
 router.route("/getAllDeliveryOrders").post(protect, getAllDeliveryOrder);

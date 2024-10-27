@@ -73,12 +73,12 @@ const getParty = AsyncHandler(async (req, res) => {
 });
 
 const getAllParty = AsyncHandler(async (req, res) => {
-  console.log(req.body)
-  let query = {}
- let companyId = req.body.companyId || req.user.companyId;
- if(companyId){
-  query.companyId = companyId;
- }
+  console.log(req.body);
+  let query = {};
+  let companyId = req.body.companyId || req.user.companyId;
+  if (companyId) {
+    query.companyId = companyId;
+  }
   const party = await Party.find(query);
   if (party) {
     res.status(201).json(party);
@@ -87,7 +87,6 @@ const getAllParty = AsyncHandler(async (req, res) => {
     throw new Error("parties not found");
   }
 });
-
 
 const updateParty = AsyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -98,9 +97,45 @@ const updateParty = AsyncHandler(async (req, res) => {
 
   try {
     const updatedParty = await Party.findByIdAndUpdate(id, req.body, {
-      new: true, // return the updated document rather than the original
-      runValidators: true, // run schema validators
+      new: true,
+      runValidators: true,
     });
+
+    if (!updatedParty) {
+      return res.status(404).json({ message: "Party not found" });
+    }
+
+    res.status(200).json({
+      message: "Party updated successfully",
+      company: updatedParty,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+const updatePartyStatus = AsyncHandler(async (req, res) => {
+  console.log("uppppppppppppppppppppppppppppppppppp");
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: "Party ID is required" });
+  }
+
+  try {
+    const party = await Party.findById(id);
+    if (!party) {
+      return res.status(404).json({ message: "Party not found" });
+    }
+
+    const updatedParty = await Party.findByIdAndUpdate(
+      id,
+      { status: !party.status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!updatedParty) {
       return res.status(404).json({ message: "Party not found" });
@@ -135,4 +170,11 @@ const deleteParty = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerParty, getParty, getAllParty,deleteParty,updateParty };
+export {
+  registerParty,
+  getParty,
+  getAllParty,
+  deleteParty,
+  updateParty,
+  updatePartyStatus,
+};
