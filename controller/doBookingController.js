@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import AsyncHandler from "express-async-handler";
 import DoBooking from "../modals/doBookingModal.js";
 import Party from "../modals/partyModal.js";
@@ -5,14 +6,11 @@ import Company from "../modals/companyModal.js";
 import DOBooking from "../modals/doBookingModal.js";
 import DeliveryOrder from "../modals/deliveryOrderModal.js";
 
-
-
-
 const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
-  const { doLink,name,uniqueName,fileName,availableFrom,type } = req.body;
+  const { doLink, name, uniqueName, fileName, availableFrom, type } = req.body;
 
-  console.log("registerBooking")
-  console.log(req.body)
+  console.log("registerBooking");
+  console.log(req.body);
 
   const company = await Company.findById(req.user.companyId);
   if (!company) {
@@ -20,7 +18,7 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("company not found");
   }
 
-  if(company.companyType === 'transporter'){
+  if (company.companyType === "transporter") {
     res.status(404);
     throw new Error("its only transporter company, you cant upload do");
   }
@@ -31,43 +29,42 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
         doNumber: 1,
         numericDoNumber: {
           $toInt: {
-            $substr: ['$doNumber', 3, -1]
-          }
-        }
-      }
+            $substr: ["$doNumber", 3, -1],
+          },
+        },
+      },
     },
     {
-      $sort: { numericDoNumber: -1 } 
+      $sort: { numericDoNumber: -1 },
     },
     {
-      $limit: 1 
-    }
+      $limit: 1,
+    },
   ]);
 
+  let newOrderNumber;
+  if (lastOrder && lastOrder.length > 0) {
+    console.log("last order indddddddddddddddddddddddddddd");
+    console.log(lastOrder);
 
- let newOrderNumber;
- if (lastOrder && lastOrder.length > 0) {
-  console.log("last order indddddddddddddddddddddddddddd")
-  console.log(lastOrder)
-
-   console.log(lastOrder.numericDoNumber)
-   console.log(lastOrder[0].numericDoNumber)
-   newOrderNumber = `DO-${lastOrder[0].numericDoNumber + 1}`; 
- } else {
-   newOrderNumber = 'DO-1'; 
- }
-console.log(newOrderNumber)
- // Create a new delivery order
- const newBooking = await DeliveryOrder.create({
-   companyId: company._id,
-   doLink,
-   name,
-   uniqueName,
-   fileName,
-   doNumber: newOrderNumber,
-   availableFrom:availableFrom,
-   type:type
- });
+    console.log(lastOrder.numericDoNumber);
+    console.log(lastOrder[0].numericDoNumber);
+    newOrderNumber = `DO-${lastOrder[0].numericDoNumber + 1}`;
+  } else {
+    newOrderNumber = "DO-1";
+  }
+  console.log(newOrderNumber);
+  // Create a new delivery order
+  const newBooking = await DeliveryOrder.create({
+    companyId: company._id,
+    doLink,
+    name,
+    uniqueName,
+    fileName,
+    doNumber: newOrderNumber,
+    availableFrom: availableFrom,
+    type: type,
+  });
 
   if (newBooking) {
     res.status(201).json({
@@ -79,11 +76,9 @@ console.log(newOrderNumber)
   }
 });
 
-
-
 const updateDeliveryOrder = AsyncHandler(async (req, res) => {
   const { id } = req.params; // Get the ID from request parameters
-  const { doLink, name, uniqueName, fileName,type,availableFrom } = req.body;
+  const { doLink, name, uniqueName, fileName, type, availableFrom } = req.body;
 
   console.log("updateDeliveryOrder");
   console.log(req.body);
@@ -94,11 +89,10 @@ const updateDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("Company not found");
   }
 
-  if (company.companyType === 'transporter') {
-    res.status(403); 
+  if (company.companyType === "transporter") {
+    res.status(403);
     throw new Error("It's only a transporter company, you can't upload DO");
   }
-
 
   const existingOrder = await DeliveryOrder.findById(id);
   if (!existingOrder) {
@@ -126,8 +120,6 @@ const updateDeliveryOrder = AsyncHandler(async (req, res) => {
   }
 });
 
-
-
 const CancelDeliveryOrder = AsyncHandler(async (req, res) => {
   const { id } = req.params; // Get the ID from request parameters
   const { cancelReason } = req.body; // Get cancel reason from request body
@@ -143,13 +135,12 @@ const CancelDeliveryOrder = AsyncHandler(async (req, res) => {
   //   res.status(404);
   //   throw new Error("Company not found");
   // }
-if(company){
-  if (company.companyType === 'transporter') {
-    res.status(403);
-    throw new Error("It's only a transporter company, you can't upload DO");
+  if (company) {
+    if (company.companyType === "transporter") {
+      res.status(403);
+      throw new Error("It's only a transporter company, you can't upload DO");
+    }
   }
-}
-
 
   const existingOrder = await DeliveryOrder.findById(id);
   if (!existingOrder) {
@@ -157,20 +148,20 @@ if(company){
     throw new Error("Delivery order not found");
   }
 
-if(company){
-  existingOrder.status = 6; 
-}else{
-  existingOrder.status = 5; 
-}
-  
-  existingOrder.cancelReason = cancelReason; 
+  if (company) {
+    existingOrder.status = 6;
+  } else {
+    existingOrder.status = 5;
+  }
+
+  existingOrder.cancelReason = cancelReason;
 
   const updatedOrder = await existingOrder.save();
 
   if (updatedOrder) {
     res.status(200).json({
       msg: "Delivery order canceled successfully",
-      order: updatedOrder 
+      order: updatedOrder,
     });
   } else {
     res.status(400);
@@ -178,51 +169,50 @@ if(company){
   }
 });
 
-
 const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
   const companyId = req.body.companyId || req.user.companyId;
   let queryCondition = {};
-  
+
   if (companyId) {
     queryCondition = { companyId: companyId };
   }
-console.log(req.body)
-console.log(req.body.status)
+  console.log(req.body);
+  console.log(req.body.status);
   if (req.body.status !== undefined) {
-    console.log("heyyy")
+    console.log("heyyy");
     queryCondition.status = req.body.status;
   }
 
   const Dos = await DeliveryOrder.find(queryCondition).sort({ createdAt: -1 });
   const statusMapping = {
-    0: 'pending',
-    1: 'inqueue',
-    2: 'allocated',
-    3: 'ongoing',
-    4: 'completed',
-    5: 'rejected',
-    6: 'cancelled'
+    0: "pending",
+    1: "inqueue",
+    2: "allocated",
+    3: "ongoing",
+    4: "completed",
+    5: "rejected",
+    6: "cancelled",
   };
   if (Dos) {
-    const transformedDos = Dos.map(doItem => {
+    const transformedDos = Dos.map((doItem) => {
       const createdAtDate = new Date(doItem.createdAt);
-      const uploadDate = createdAtDate.toLocaleDateString('en-GB'); // Format as dd/mm/yyyy
-      const availableFrom = doItem.availableFrom.toLocaleDateString('en-GB')
-      console.log(statusMapping[doItem.status])
+      const uploadDate = createdAtDate.toLocaleDateString("en-GB"); // Format as dd/mm/yyyy
+      const availableFrom = doItem.availableFrom.toLocaleDateString("en-GB");
+      console.log(statusMapping[doItem.status]);
       return {
         _id: doItem._id,
         name: doItem.name,
         companyId: doItem.companyId,
         uniqueName: doItem.uniqueName,
-        availableFrom:availableFrom,
+        availableFrom: availableFrom,
         cancelReason: doItem.cancelReason,
-        doNumber:doItem.doNumber,
+        doNumber: doItem.doNumber,
         type: doItem.type,
         link: doItem.doLink,
         fileName: doItem.fileName,
         status: statusMapping[doItem.status],
         __v: doItem.__v,
-        uploadDate: uploadDate // Add the formatted date as uploadDate
+        uploadDate: uploadDate, // Add the formatted date as uploadDate
       };
     });
 
@@ -234,14 +224,22 @@ console.log(req.body.status)
 });
 
 const registerBooking = AsyncHandler(async (req, res) => {
-  const { partyId, truckType, rate, availableFrom,autoBooking,companyId, deliveryOrderId } = req.body;
-  
+  const {
+    partyId,
+    truckType,
+    rate,
+    availableFrom,
+    autoBooking,
+    companyId,
+    deliveryOrderId,
+  } = req.body;
+
   if (req.user.companyId) {
     res.status(404);
     throw new Error("dont have access to make booking");
   }
-  console.log("registerBooking")
-  console.log(req.body)
+  console.log("registerBooking");
+  console.log(req.body);
 
   //check for already exist deliveryOrder
   const deliveryOrder = await DeliveryOrder.findById(deliveryOrderId);
@@ -250,13 +248,16 @@ const registerBooking = AsyncHandler(async (req, res) => {
     throw new Error("Delivery order not found");
   }
 
-  const doBooking = await DoBooking.findOne({deliveryOrderId});
+  const doBooking = await DoBooking.findOne({
+    deliveryOrderId: deliveryOrderId,
+    status: { $ne: "cancelled" }
+  });
   if (doBooking) {
     res.status(409);
     throw new Error("DO Booking already created for this Delivery oder");
   }
 
-//if autoBooking then auto allocate
+  //if autoBooking then auto allocate
   const party = await Party.findById(partyId);
   if (!party) {
     res.status(404);
@@ -268,8 +269,6 @@ const registerBooking = AsyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("company not found");
   }
-
-
 
   const newBooking = await DoBooking.create({
     partyId,
@@ -303,7 +302,6 @@ const getDoById = AsyncHandler(async (req, res) => {
   }
 });
 
-
 ///party populate
 const getAllBooking = AsyncHandler(async (req, res) => {
   let queryCondition = {};
@@ -317,25 +315,28 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   if (req.body.partyId) {
     queryCondition.partyId = req.body.partyId;
   }
-  
+
   // Fetch bookings and populate 'partyId'
-  const bookings = await DoBooking.find(queryCondition).populate("partyId").populate("deliveryOrderId")
+  const bookings = await DoBooking.find(queryCondition)
+    .populate("partyId")
+    .populate("deliveryOrderId");
 
   // Map over bookings to format the date
-  const formattedBookings = bookings.map(booking => ({
+  const formattedBookings = bookings.map((booking) => ({
     ...booking.toObject(),
-    availableFrom: new Date(booking.availableFrom).toLocaleDateString('en-GB') 
+    availableFrom: new Date(booking.availableFrom).toLocaleDateString("en-GB"),
+    reason: booking.deliveryOrderId?.cancelReason,
+    doNumber: booking.deliveryOrderId.doNumber,
   }));
 
   console.log(formattedBookings);
-  
+
   if (formattedBookings.length > 0) {
     res.status(200).json(formattedBookings);
   } else {
-    res.status(200).json([]);;
+    res.status(200).json([]);
   }
 });
-
 
 const deleteDo = AsyncHandler(async (req, res) => {
   const { doId } = req.body;
@@ -348,11 +349,8 @@ const deleteDo = AsyncHandler(async (req, res) => {
   }
 });
 
-
 const deleteDeliveryOrder = AsyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log("-------------------------------------------------------------------heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyys...")
-  console.log(req.params)
 
   const doOrder = await DeliveryOrder.findByIdAndDelete(id);
   if (doOrder) {
@@ -363,5 +361,137 @@ const deleteDeliveryOrder = AsyncHandler(async (req, res) => {
   }
 });
 
+const CancelDoBooking = AsyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-export { registerBooking, getDoById, getAllBooking,deleteDo,uploadDeliveryOrder,CancelDeliveryOrder,updateDeliveryOrder,getAllDeliveryOrder,deleteDeliveryOrder };
+  try {
+    const { id } = req.params;
+    const { cancelReason } = req.body;
+
+    // Check if cancelReason is provided
+    if (!cancelReason) {
+      res.status(400);
+      throw new Error("Cancel reason is mandatory.");
+    }
+
+    // Fetch company to check if the user belongs to a valid company
+    // const company = await Company.findById(req.user.companyId).session(session);
+    // if (!company) {
+    //   res.status(404);
+    //   throw new Error("Company not found");
+    // }
+
+    // Fetch existing DO booking
+    const existingDo = await DOBooking.findById(id).session(session);
+    if (!existingDo) {
+      res.status(404);
+      throw new Error("Delivery Booking not found");
+    }
+
+    // Fetch existing order
+    const existingOrder = await DeliveryOrder.findById(
+      existingDo.deliveryOrderId
+    ).session(session);
+    if (!existingOrder) {
+      res.status(404);
+      throw new Error("Delivery Order not found");
+    }
+
+    // Update statuses and reasons
+    existingDo.status = "cancelled";
+    existingOrder.cancelReason = cancelReason;
+    existingOrder.status = 6;
+
+    // Save the changes within the transaction
+    const updatedOrder = await existingOrder.save({ session });
+    const updatedDoBooking = await existingDo.save({ session });
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      msg: "Delivery order canceled successfully",
+    });
+  } catch (error) {
+    await session.abortTransaction();
+
+    res.status(400).json({
+      msg: "Failed to cancel the delivery order",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
+const ReOpenDoBooking = AsyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    let cancelReason = "ReOpened booking";
+
+      // Fetch company to check if the user belongs to a valid company
+    const company = await Company.findById(req.user.companyId).session(session);
+    if (company) {
+      res.status(404);
+      throw new Error("user dont have action to perform this operation");
+    }
+
+
+    // Fetch existing DO booking
+    const existingDo = await DOBooking.findById(id).session(session);
+    if (!existingDo) {
+      res.status(404);
+      throw new Error("Delivery Booking not found");
+    }
+
+    // Fetch existing order
+    const existingOrder = await DeliveryOrder.findById(
+      existingDo.deliveryOrderId
+    ).session(session);
+    if (!existingOrder) {
+      res.status(404);
+      throw new Error("Delivery Order not found");
+    }
+
+    // Update statuses and reasons
+    existingDo.status = "cancelled";
+    existingOrder.cancelReason = cancelReason;
+    existingOrder.status = 0;
+
+    // Save the changes within the transaction
+    const updatedOrder = await existingOrder.save({ session });
+    const updatedDoBooking = await existingDo.save({ session });
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      msg: "Delivery order Reopened successfully",
+    });
+  } catch (error) {
+    await session.abortTransaction();
+
+    res.status(400).json({
+      msg: "Failed to Reopened the delivery order",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
+export {
+  registerBooking,
+  getDoById,
+  getAllBooking,
+  deleteDo,
+  uploadDeliveryOrder,
+  CancelDeliveryOrder,
+  updateDeliveryOrder,
+  getAllDeliveryOrder,
+  deleteDeliveryOrder,
+  CancelDoBooking,
+  ReOpenDoBooking
+};

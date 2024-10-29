@@ -4,12 +4,15 @@ import DeliveryOrder from "../modals/deliveryOrderModal.js";
 import Allocation from "../modals/allocationModal.js";
 import TruckBooking from "../modals/truckBookingModal.js"
 import DOBooking from "../modals/doBookingModal.js";
-
+import mongoose from "mongoose";
 const doAllocation = AsyncHandler(async (req, res) => {
   const { doBookingId, doDate,truckBookingId } = req.body;
 
 
-  const doAllocationExist = await Allocation.findOne({DOBookingId:doBookingId});
+  const doAllocationExist = await Allocation.findOne({
+    DOBookingId: doBookingId,
+    status: { $ne: "cancelled" }
+  });
   if (doAllocationExist) {
     res.status(403);
     throw new Error("This do is already allocated");
@@ -40,6 +43,12 @@ const doAllocation = AsyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("truck not found");
   }
+
+  console.log("Dateeeeeeeeeeeeeeeeeee")
+  console.log(truckBooking.availableFrom)
+  console.log(doDate)
+
+  console.log("Dateeeeeeeeeeeeeeeeeee")
 
   if(truckBooking.availableFrom<doDate){
     res.status(400);
@@ -81,6 +90,144 @@ const doAllocation = AsyncHandler(async (req, res) => {
 
 
 
+
+const CancelAllocatedBooking = AsyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    const { cancelReason } = req.body;
+
+    if (!cancelReason) {
+      res.status(400);
+      throw new Error("Cancel reason is mandatory.");
+    }
+
+ console.log(id)
+    const doAllocationExist = await Allocation.findOne({"DOBookingId":id}).session(session);
+    if (!doAllocationExist) {
+      res.status(403);
+      throw new Error("Allocation not found");
+    }
+   
+
+    const truckBookingIdExist = await TruckBooking.findById(doAllocationExist.truckBookingId).session(session);
+    if (!truckBookingIdExist) {
+      res.status(403);
+      throw new Error("truckBooking not found");
+    }
+   
+    // Fetch company to check if the user belongs to a valid company
+    // const company = await Company.findById(req.user.companyId).session(session);
+    // if (!company) {
+    //   res.status(404);
+    //   throw new Error("Company not found");
+    // }
+
+    // Fetch existing DO booking
+    const existingDo = await DOBooking.findById(id).session(session);
+    if (!existingDo) {
+      res.status(404);
+      throw new Error("Delivery Booking not found"); 
+    }
+
+    const existingOrder = await DeliveryOrder.findById(existingDo.deliveryOrderId).session(session);
+    if (!existingOrder) {
+      res.status(404);
+      throw new Error("Delivery Order not found");
+    }
+
+
+    doAllocationExist.status = "cancelled"
+    doAllocationExist.cancelReason = cancelReason;
+    existingDo.status = "cancelled";
+    existingOrder.cancelReason = cancelReason;
+    existingOrder.status = 6;
+    truckBookingIdExist.status = "inqueue";
+
+    const updatedOrder = await existingOrder.save({ session });
+    const updatedDoAllocation = await doAllocationExist.save({ session });
+    const updatedDoExisting = await existingDo.save({ session });
+    const updatedtruckBooking = await truckBookingIdExist.save({ session });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      msg: "Allocated order canceled successfully"
+    });
+  } catch (error) {
+    await session.abortTransaction();
+
+    res.status(400).json({
+      msg: "Failed to cancel the Allocated order",
+      error: error.message
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
+
+
+const ReAllocateBooking = AsyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+
+   let cancelReason = "Re Allocation";
+    const doAllocationExist = await Allocation.findOne({"DOBookingId":id}).session(session);
+    if (!doAllocationExist) {
+      res.status(403);
+      throw new Error("Allocation not found");
+    }
+   
+
+    const truckBookingIdExist = await TruckBooking.findById(doAllocationExist.truckBookingId).session(session);
+    if (!truckBookingIdExist) {
+      res.status(403);
+      throw new Error("truckBooking not found");
+    }
+    const existingDo = await DOBooking.findById(id).session(session);
+    if (!existingDo) {
+      res.status(404);
+      throw new Error("Delivery Booking not found"); 
+    }
+
+    const existingOrder = await DeliveryOrder.findById(existingDo.deliveryOrderId).session(session);
+    if (!existingOrder) {
+      res.status(404);
+      throw new Error("Delivery Order not found");
+    }
+
+
+    doAllocationExist.status = "cancelled"
+    doAllocationExist.cancelReason = cancelReason;
+    existingDo.status = "open";
+    existingOrder.status = 1;
+    truckBookingIdExist.status = "inqueue";
+
+    const updatedOrder = await existingOrder.save({ session });
+    const updatedDoAllocation = await doAllocationExist.save({ session });
+    const updatedDoExisting = await existingDo.save({ session });
+    const updatedtruckBooking = await truckBookingIdExist.save({ session });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      msg: "Allocated order Ready For Reallocation"
+    });
+  } catch (error) {
+    await session.abortTransaction();
+
+    res.status(400).json({
+      msg: "Failed to Reallocate the Allocated order",
+      error: error.message
+    });
+  } finally {
+    session.endSession();
+  }
+});
 
 
 const doAutoAllocation = AsyncHandler(async (req, res) => {
@@ -179,6 +326,9 @@ const getAllocationDetails = AsyncHandler(async (req, res) => {
 
 });
 
+
+
+//to make status ongoin and done
 const changeAllocationStatus = AsyncHandler(async (req, res) => {
   let { status, allocId } = req.body;
   
@@ -242,4 +392,4 @@ const changeAllocationStatus = AsyncHandler(async (req, res) => {
 
 
 
-export { doAllocation,getAllocationDetails,changeAllocationStatus};
+export { doAllocation,getAllocationDetails,changeAllocationStatus,CancelAllocatedBooking,ReAllocateBooking};

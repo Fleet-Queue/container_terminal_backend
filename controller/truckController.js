@@ -235,7 +235,7 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
       return bookingDate <= requestDate;
     });
   }
-  
+  console.log("--------------------------------------------------------------------------")
   console.log("Filtered Truck Bookings:", filteredTruckBookings);
   
   if (filteredTruckBookings.length > 0) {
