@@ -238,8 +238,7 @@ const registerBooking = AsyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("dont have access to make booking");
   }
-  console.log("registerBooking");
-  console.log(req.body);
+
 
   //check for already exist deliveryOrder
   const deliveryOrder = await DeliveryOrder.findById(deliveryOrderId);

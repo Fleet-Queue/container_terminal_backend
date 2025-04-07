@@ -38,7 +38,6 @@ const driverSchema = mongoose.Schema(
     },
     expiryDate: {
       type: Date,
-      required: true,
     },    
     status: {
       type: String,

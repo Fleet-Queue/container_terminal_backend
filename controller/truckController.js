@@ -12,7 +12,7 @@ const registerTruck = AsyncHandler(async (req, res) => {
   const truck = await Truck.findOne({ registrationNumber: registrationNumber });
   if (truck) {
     res.status(403);
-    throw new Error("user exists with same Registration number");
+    throw new Error("Truck exists with same Registration number");
   }
 
   const company = await Company.findById(companyId);
@@ -138,7 +138,14 @@ const getAllTruck = AsyncHandler(async (req, res) => {
   }
   const trucks = await Truck.find(queryCondition).populate("companyId");
   if (trucks) {
-    res.status(201).json(trucks);
+    const trucksWithCompanyInfo = trucks.map(truck => {
+      return {
+          ...truck.toObject(),
+          companyId: truck.companyId._id,
+          companyName: truck.companyId.name,
+      };
+  });
+    res.status(201).json(trucksWithCompanyInfo);
   } else {
     res.status(404);
     throw new Error("no trucks found");

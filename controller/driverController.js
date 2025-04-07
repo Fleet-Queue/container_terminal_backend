@@ -72,6 +72,7 @@ const getAllDrivers = AsyncHandler(async (req, res) => {
       _id: driver._id,
       name: driver.name,
       companyName: driver.companyId.name,
+      companyId: driver.companyId._id,
       address: driver.address,
       contactNumber: driver.contactNumber,
       licenceNumber: driver.licenceNumber,
