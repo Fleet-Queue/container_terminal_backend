@@ -14,6 +14,10 @@ var DeliveryOrderSchema = new Schema({
     required:true,
     type:String
   },
+  location:{
+    required:true,
+    type:String
+  },
   fileName:{
     required:true,
     type:String

@@ -7,7 +7,7 @@ import DOBooking from "../modals/doBookingModal.js";
 import DeliveryOrder from "../modals/deliveryOrderModal.js";
 
 const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
-  const { doLink, name, uniqueName, fileName, availableFrom, type } = req.body;
+  const { doLink, name,location, uniqueName, fileName, availableFrom, type } = req.body;
 
   console.log("registerBooking");
   console.log(req.body);
@@ -59,6 +59,7 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
     companyId: company._id,
     doLink,
     name,
+    location,
     uniqueName,
     fileName,
     doNumber: newOrderNumber,
@@ -78,7 +79,7 @@ const uploadDeliveryOrder = AsyncHandler(async (req, res) => {
 
 const updateDeliveryOrder = AsyncHandler(async (req, res) => {
   const { id } = req.params; // Get the ID from request parameters
-  const { doLink, name, uniqueName, fileName, type, availableFrom } = req.body;
+  const { doLink, name, uniqueName, location, fileName, type, availableFrom } = req.body;
 
   console.log("updateDeliveryOrder");
   console.log(req.body);
@@ -104,6 +105,7 @@ const updateDeliveryOrder = AsyncHandler(async (req, res) => {
   existingOrder.doLink = doLink || existingOrder.doLink; // Update only if provided
   existingOrder.name = name || existingOrder.name; // Update only if provided
   existingOrder.uniqueName = uniqueName || existingOrder.uniqueName; // Update only if provided
+  existingOrder.location  = location || existingOrder.location; // Update only if provided
   existingOrder.fileName = fileName || existingOrder.fileName; // Update only if provided
   existingOrder.availableFrom = fileName || existingOrder.availableFrom;
   existingOrder.type = type || existingOrder.type;
@@ -138,7 +140,7 @@ const CancelDeliveryOrder = AsyncHandler(async (req, res) => {
   if (company) {
     if (company.companyType === "transporter") {
       res.status(403);
-      throw new Error("It's only a transporter company, you can't upload DO");
+      throw new Error("It's only a transporter company, you can't Cancel DO");
     }
   }
 
@@ -148,6 +150,7 @@ const CancelDeliveryOrder = AsyncHandler(async (req, res) => {
     throw new Error("Delivery order not found");
   }
 
+  //if company cancel satus 6 if admin status 5
   if (company) {
     existingOrder.status = 6;
   } else {
@@ -179,7 +182,6 @@ const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
   console.log(req.body);
   console.log(req.body.status);
   if (req.body.status !== undefined) {
-    console.log("heyyy");
     queryCondition.status = req.body.status;
   }
 
@@ -202,6 +204,7 @@ const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
       return {
         _id: doItem._id,
         name: doItem.name,
+        location: doItem.location,
         companyId: doItem.companyId,
         uniqueName: doItem.uniqueName,
         availableFrom: availableFrom,
@@ -245,6 +248,19 @@ const registerBooking = AsyncHandler(async (req, res) => {
   if (!deliveryOrder) {
     res.status(404);
     throw new Error("Delivery order not found");
+  }
+
+  //later add cancelled reason to do booking tooo. then manage it. 
+  // current issue: now if we cancel booking then it will not be deleted from do booking. no reason also available so no matter in keeping.
+  // but causing conflict when picking booking
+  const cancelledBooking = await DoBooking.findOne({
+    deliveryOrderId: deliveryOrderId,
+    status: "cancelled"
+  });
+  
+  if (cancelledBooking) {
+    await DoBooking.deleteOne({ _id: cancelledBooking._id });
+    console.log("Cancelled booking deleted, proceeding with new booking.");
   }
 
   const doBooking = await DoBooking.findOne({
