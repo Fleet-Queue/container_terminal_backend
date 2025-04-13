@@ -60,8 +60,15 @@ const addTruckToBooking = AsyncHandler(async (req, res, next) => {
     status: { $in: ["inqueue", "allocated"] },
   });
 
+
+
   if (tBooking) {
-    if (new Date(tBooking.availableFrom) >= new Date()) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set time to 00:00:00
+    
+    const availableDate = new Date(tBooking.availableFrom);
+    availableDate.setHours(0, 0, 0, 0);
+    if (availableDate >= today) {
       res.status(409);
       throw new Error("Truck is already in queue, not expired yet");
     } else {
@@ -213,8 +220,7 @@ const getAllTruckBookings = AsyncHandler(async (req, res) => {
 });
 
 const getAllInqueTrucks = AsyncHandler(async (req, res) => {
-
-
+  // Fetch all bookings with status "inqueue"
   const truckBooking = await TruckBooking.find({ status: "inqueue" }).populate({
     path: "truck",
     populate: {
@@ -224,33 +230,37 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
 
   let filteredTruckBookings = truckBooking;
 
+  // Filter by truck type if provided
   if (req.body.type) {
     filteredTruckBookings = filteredTruckBookings.filter(
       (tb) => tb.truck.truckType === req.body.type
     );
   }
-  
-  if (req.body.date) {
-    const dateParts = req.body.date.split('/');
-    const requestDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-  
-    filteredTruckBookings = filteredTruckBookings.filter((tb) => {
-      const bookingDate = new Date(tb.availableFrom);
-      console.log("DO Date:", requestDate);
-      console.log("availableFrom:", bookingDate);
 
+  // Filter by date (only comparing the date portion, not time)
+  if (req.body.date) {
+    const dateParts = req.body.date.split('/'); // Assuming format: dd/mm/yyyy
+    const stripTime = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const requestDate = stripTime(new Date(dateParts[2], dateParts[1] - 1, dateParts[0]));
+    console.log("body date", req.body.date);
+    console.log("request date", requestDate);
+    filteredTruckBookings = filteredTruckBookings.filter((tb) => {
+      const bookingDate = stripTime(new Date(tb.availableFrom));
+      console.log("booking date", bookingDate);
       return bookingDate <= requestDate;
     });
   }
-  console.log("--------------------------------------------------------------------------")
+
+
+
   console.log("Filtered Truck Bookings:", filteredTruckBookings);
-  
+
   if (filteredTruckBookings.length > 0) {
     res.status(201).json(filteredTruckBookings);
   } else {
     res.status(200).json([]);
   }
-  
 });
 
 const updateStatus = AsyncHandler(async (req, res) => {

@@ -18,7 +18,7 @@ import cookieParser from "cookie-parser";
 import { createServer } from 'http'; 
 import rateLimit from "express-rate-limit";
 import requestIp from 'request-ip'
-
+import "./jobs/trucksQueueExpire.js";
 
 
 const PORT = process.env.PORT || 3000
