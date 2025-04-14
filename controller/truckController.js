@@ -245,11 +245,11 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
     const requestDate = stripTime(new Date(dateParts[2], dateParts[1] - 1, dateParts[0]));
     console.log("body date", req.body.date);
     console.log("request date", requestDate);
-    filteredTruckBookings = filteredTruckBookings.filter((tb) => {
-      const bookingDate = stripTime(new Date(tb.availableFrom));
-      console.log("booking date", bookingDate);
-      return bookingDate <= requestDate;
-    });
+    // filteredTruckBookings = filteredTruckBookings.filter((tb) => {
+    //   const bookingDate = stripTime(new Date(tb.availableFrom));
+    //   console.log("booking date", bookingDate);
+    //   return bookingDate <= requestDate;
+    // });
   }
 
 
@@ -262,6 +262,42 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
     res.status(200).json([]);
   }
 });
+
+
+
+const getTruckQueue = AsyncHandler(async (req, res) => {
+  const { type, date } = req.body;
+
+  // Get all 'inqueue' bookings with truck and company details
+  let truckBookings = await TruckBooking.find({ status: "inqueue" }).populate({
+    path: "truck",
+    populate: {
+      path: "companyId",
+    },
+  });
+
+  // Filter by truckType if provided
+  if (type) {
+    const numericType = Number(type);
+    truckBookings = truckBookings.filter(tb => tb.truck.truckType === numericType);
+  }
+
+  // Filter by date if provided
+  if (date) {
+    const [day, month, year] = date.split('/');
+    const targetDate = new Date(year, month - 1, day);
+    
+    const stripTime = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    truckBookings = truckBookings.filter(tb => {
+      const bookingDate = stripTime(new Date(tb.availableFrom));
+      return bookingDate.getTime() === stripTime(targetDate).getTime();
+    });
+  }
+
+  res.status(200).json(truckBookings);
+});
+
 
 const updateStatus = AsyncHandler(async (req, res) => {
   const { truckId, isActive } = req.body;
@@ -378,4 +414,5 @@ export {
   updateTruckBookingStatus,
   getAllInqueTrucks,
   getAllTruckBookings,
+  getTruckQueue
 };
