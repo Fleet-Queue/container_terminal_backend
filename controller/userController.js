@@ -7,6 +7,9 @@ import {
 } from "../utils/generateToken.js";
 
 const registerUser = AsyncHandler(async (req, res) => {
+  if (req.user?.role?.toLowerCase() !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
   const { email, name, password, phone, role,userName,address,companyId } = req.body;
   const status = "true";
   if(role=="company" && !companyId){
@@ -35,7 +38,8 @@ const registerUser = AsyncHandler(async (req, res) => {
     status,
     userName,
     companyId,
-    address
+    address,
+    managedUserId: req.user._id
   });
 
   if (newUser) {
@@ -102,6 +106,35 @@ const getUser = AsyncHandler(async (req, res) => {
   }
 });
 
+const getAllUser = AsyncHandler(async (req, res) => {
+  if (req.user?.role?.toLowerCase() !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
+  const { companyId } = req.query;
+
+  const query = { role: { $ne: "admin" } };
+  if (companyId) {
+    query.companyId = companyId;
+  }
+
+  const users = await User.find(query)
+    .select("-password")
+    .populate({
+      path: 'companyId',
+      model: 'Company', // Adjust if your model name is different
+      select: 'name' // Only get the company name
+    });
+
+  const usersWithCompanyName = users.map(user => ({
+    ...user.toObject(),
+    company: user.companyId?.name || 'N/A', // Just the company name
+    companyId: user.companyId?._id || null, // Still keep raw companyId if needed
+  }));
+
+  res.status(200).json(usersWithCompanyName);
+});
+
+
 const getUserByPhone = AsyncHandler(async (req, res) => {
   const { phone } = req.body;
   const user = await User.findOne({ phone: phone }).select("-password");
@@ -115,9 +148,65 @@ const getUserByPhone = AsyncHandler(async (req, res) => {
 });
 
 const editUser = AsyncHandler(async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.user._id, req.body);
-  res.json({ msg: "updated" });
+
+  if (req.user?.role?.toLowerCase() !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
+
+  const userId = req.params.userId || req.body.userId;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  // Only update allowed fields — avoid blindly updating from req.body
+  const updatableFields = ['name', 'userName', 'address', 'email', 'phone', 'status', 'companyId',];
+  updatableFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      user[field] = req.body[field];
+    }
+  });
+
+  if (req.body.password) {
+    user.password = req.body.password;
+  }
+
+  user.managedUserId = req.user._id
+
+  const updatedUser = await user.save();
+
+  res.status(200).json({
+    msg: "User updated successfully",
+    user: {
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      userName: updatedUser.userName,
+      email: updatedUser.email,
+      address: updatedUser.address,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      companyId: updatedUser.companyId,
+    },
+  });
 });
+
+const deleteUser = (req, res) =>{
+  if (req.user?.role?.toLowerCase() !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
+  const userId = req.params.userId;
+
+  User.findByIdAndDelete(userId)
+    .then(() => {
+      res.status(200).json({ message: "User deleted successfully" });
+    })
+    .catch((err) => {
+      res.status(500).json({ message: "Error deleting user", error: err });
+    });
+}
+
 
 const logout = (req, res) => {
   const cookies = req.cookies;
@@ -134,5 +223,7 @@ export {
   editUser,
   updatePassword,
   getUserByPhone,
+  getAllUser,
   logout,
+  deleteUser
 };

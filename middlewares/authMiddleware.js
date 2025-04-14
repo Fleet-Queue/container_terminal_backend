@@ -11,7 +11,7 @@ const protect = AsyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = await User.findById(decoded.id).select('-password')
 
-    if (req.user === undefined) {
+    if (req.user === undefined || req.user === null) {
       res.status(401).json({ msg: 'No user found..' })
       throw new Error('Not Autherized')
     } else {

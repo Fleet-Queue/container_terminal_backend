@@ -49,6 +49,10 @@ const userSchema = mongoose.Schema(
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
+    managedUserId:{
+      type: Schema.Types.ObjectId,
+      ref: "User", 
+    }
   },
   {
     timestamps: true,
