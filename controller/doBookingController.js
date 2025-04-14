@@ -360,8 +360,14 @@ const getAllBooking = AsyncHandler(async (req, res) => {
   }
   // Fetch bookings and populate 'partyId'
   const bookings = await DoBooking.find(queryCondition)
-    .populate("partyId")
-    .populate("deliveryOrderId");
+  .populate("partyId")
+  .populate({
+    path: "deliveryOrderId",
+    populate: {
+      path: "companyId",
+      model: "Company" // or whatever your Company model name is
+    }
+  });
 
   // Map over bookings to format the date
   const formattedBookings = bookings.map((booking) => ({
