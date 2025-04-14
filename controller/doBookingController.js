@@ -331,6 +331,33 @@ const getAllBooking = AsyncHandler(async (req, res) => {
     queryCondition.partyId = req.body.partyId;
   }
 
+  if (req.body.date) {
+    const dateParts = req.body.date.split('/'); // Split the date string by '/'
+    if (dateParts.length === 3) {
+      const day = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed in JavaScript
+      const year = parseInt(dateParts[2], 10);
+  
+      const istDate = new Date(year, month, day); // Create a valid Date object in IST
+      if (isNaN(istDate.getTime())) {
+        res.status(400);
+        throw new Error("Invalid date format. Please provide a valid date.");
+      }
+  
+      // Convert IST date to UTC
+      const utcStartDate = new Date(istDate.getTime() - (5 * 60 + 30) * 60 * 1000); // Subtract 5 hours 30 minutes
+      const utcEndDate = new Date(utcStartDate);
+      utcEndDate.setDate(utcEndDate.getDate() + 1); // Add 1 day for the end range
+  
+      queryCondition.updatedAt = {
+        $gte: utcStartDate, // Greater than or equal to the start of the day in UTC
+        $lt: utcEndDate, // Less than the start of the next day in UTC
+      };
+    } else {
+      res.status(400);
+      throw new Error("Invalid date format. Please use DD/MM/YYYY.");
+    }
+  }
   // Fetch bookings and populate 'partyId'
   const bookings = await DoBooking.find(queryCondition)
     .populate("partyId")
@@ -346,18 +373,14 @@ const getAllBooking = AsyncHandler(async (req, res) => {
 
   console.log(formattedBookings);
 
-  if (formattedBookings.length > 0) {
-    res.status(200).json(formattedBookings);
-  } else {
-    res.status(200).json([]);
-  }
+   res.status(200).json(formattedBookings.length > 0 ? formattedBookings : []);
 });
 
 const deleteDo = AsyncHandler(async (req, res) => {
   const { doId } = req.body;
   const booking = await DOBooking.findByIdAndDelete(doId);
   if (booking) {
-    res.status(201).json(booking);
+    res.status(200).json(booking);
   } else {
     res.status(404);
     throw new Error("booking not found");
