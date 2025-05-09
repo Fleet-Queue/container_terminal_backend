@@ -185,7 +185,7 @@ const getAllDeliveryOrder = AsyncHandler(async (req, res) => {
     queryCondition.status = req.body.status;
   }
 
-  const Dos = await DeliveryOrder.find(queryCondition).sort({ createdAt: -1 });
+  const Dos = await DeliveryOrder.find(queryCondition).sort({ createdAt: 1 });
   const statusMapping = {
     0: "pending",
     1: "inqueue",
@@ -331,33 +331,26 @@ const getAllBooking = AsyncHandler(async (req, res) => {
     queryCondition.partyId = req.body.partyId;
   }
 
-  if (req.body.date) {
-    const dateParts = req.body.date.split('/'); // Split the date string by '/'
-    if (dateParts.length === 3) {
-      const day = parseInt(dateParts[0], 10);
-      const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed in JavaScript
-      const year = parseInt(dateParts[2], 10);
-  
-      const istDate = new Date(year, month, day); // Create a valid Date object in IST
-      if (isNaN(istDate.getTime())) {
-        res.status(400);
-        throw new Error("Invalid date format. Please provide a valid date.");
-      }
-  
-      // Convert IST date to UTC
-      const utcStartDate = new Date(istDate.getTime() - (5 * 60 + 30) * 60 * 1000); // Subtract 5 hours 30 minutes
-      const utcEndDate = new Date(utcStartDate);
-      utcEndDate.setDate(utcEndDate.getDate() + 1); // Add 1 day for the end range
-  
-      queryCondition.updatedAt = {
-        $gte: utcStartDate, // Greater than or equal to the start of the day in UTC
-        $lt: utcEndDate, // Less than the start of the next day in UTC
-      };
-    } else {
-      res.status(400);
-      throw new Error("Invalid date format. Please use DD/MM/YYYY.");
-    }
+if (req.body.date) {
+  const dateParts = req.body.date.split('/');
+  if (dateParts.length === 3) {
+    const day = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const year = parseInt(dateParts[2], 10);
+
+    const utcStartDate = new Date(Date.UTC(year, month, day)); // 00:00 UTC
+    const utcEndDate = new Date(Date.UTC(year, month, day + 1)); // next day 00:00 UTC
+
+    queryCondition.updatedAt = {
+      $gte: utcStartDate,
+      $lt: utcEndDate,
+    };
+  } else {
+    res.status(400);
+    throw new Error("Invalid date format. Please use DD/MM/YYYY.");
   }
+}
+
   // Fetch bookings and populate 'partyId'
   const bookings = await DoBooking.find(queryCondition)
   .populate("partyId")
@@ -367,7 +360,7 @@ const getAllBooking = AsyncHandler(async (req, res) => {
       path: "companyId",
       model: "Company" // or whatever your Company model name is
     }
-  });
+  }).populate('companyId').sort({ createdAt: 1 });
 
   // Map over bookings to format the date
   const formattedBookings = bookings.map((booking) => ({
@@ -375,6 +368,9 @@ const getAllBooking = AsyncHandler(async (req, res) => {
     availableFrom: new Date(booking.availableFrom).toLocaleDateString("en-GB"),
     reason: booking.deliveryOrderId?.cancelReason,
     doNumber: booking.deliveryOrderId.doNumber,
+    companyName: booking.companyId?.name,
+    name: booking.deliveryOrderId.name,
+    location: booking.deliveryOrderId.location,
   }));
 
   console.log(formattedBookings);

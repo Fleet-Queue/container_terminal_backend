@@ -21,11 +21,13 @@ const registerTruck = AsyncHandler(async (req, res) => {
     throw new Error("company does not exist");
   }
 
+  if(driverId){
   const driver = await Driver.findById(driverId);
   if (!driver) {
     res.status(403);
     throw new Error("driver does not exist");
   }
+}
 
   const newTruck = await Truck.create({
     name,
@@ -226,7 +228,7 @@ const getAllInqueTrucks = AsyncHandler(async (req, res) => {
     populate: {
       path: "companyId",
     },
-  });
+  }).sort({ createdAt: 1 });
 
   let filteredTruckBookings = truckBooking;
 
@@ -269,7 +271,9 @@ const getTruckQueue = AsyncHandler(async (req, res) => {
   const { type, date } = req.body;
 
   // Get all 'inqueue' bookings with truck and company details
-  let truckBookings = await TruckBooking.find({ status: "inqueue" }).populate({
+  let truckBookings = await TruckBooking.find({ status: "inqueue" })
+   .sort({ createdAt: 1 }) 
+   .populate({
     path: "truck",
     populate: {
       path: "companyId",

@@ -293,6 +293,80 @@ const doAutoAllocation = AsyncHandler(async (req, res) => {
  
 });
 
+const getAllAllocationDetails = AsyncHandler(async (req, res) => {
+  let queryCondition = {};
+  let companyId = req.body.companyId || req.user.companyId;
+
+  if (companyId) {
+    queryCondition.companyId = companyId;
+  }
+
+  if (req.body.status) {
+    queryCondition.status = req.body.status;
+  }
+
+  if (req.body.partyId) {
+    queryCondition.partyId = req.body.partyId;
+  }
+
+  let doBookingIds = [];
+
+  if (req.body.date) {
+    const dateParts = req.body.date.split('/');
+    if (dateParts.length === 3) {
+      const day = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1;
+      const year = parseInt(dateParts[2], 10);
+
+      const utcStartDate = new Date(Date.UTC(year, month, day));
+      const utcEndDate = new Date(Date.UTC(year, month, day + 1));
+
+      // Fetch allocations matching the date range
+      const allocations = await Allocation.find({
+        allocatedOn: { $gte: utcStartDate, $lt: utcEndDate }
+      });
+
+      doBookingIds = allocations.map((a) => a.DOBookingId.toString());
+
+      // If no matching allocations, return early
+      if (doBookingIds.length === 0) {
+        return res.status(200).json([]);
+      }
+
+      // Filter DOBooking by matching IDs
+      queryCondition._id = { $in: doBookingIds };
+    } else {
+      res.status(400);
+      throw new Error("Invalid date format. Please use DD/MM/YYYY.");
+    }
+  }
+
+  // Fetch bookings and populate related data
+  const bookings = await DOBooking.find(queryCondition)
+    .populate("partyId")
+    .populate({
+      path: "deliveryOrderId",
+      populate: {
+        path: "companyId",
+        model: "Company"
+      }
+    })
+    .populate("companyId")
+    .sort({ createdAt: 1 });
+
+  const formattedBookings = bookings.map((booking) => ({
+    ...booking.toObject(),
+    availableFrom: new Date(booking.availableFrom).toLocaleDateString("en-GB"),
+    reason: booking.deliveryOrderId?.cancelReason,
+    doNumber: booking.deliveryOrderId?.doNumber,
+    companyName: booking.companyId?.name,
+    name: booking.deliveryOrderId?.name,
+    location: booking.deliveryOrderId?.location,
+  }));
+
+  res.status(200).json(formattedBookings);
+});
+
 
 
 const getAllocationDetails = AsyncHandler(async (req, res) => {
@@ -392,4 +466,4 @@ const changeAllocationStatus = AsyncHandler(async (req, res) => {
 
 
 
-export { doAllocation,getAllocationDetails,changeAllocationStatus,CancelAllocatedBooking,ReAllocateBooking};
+export { doAllocation,getAllocationDetails,getAllAllocationDetails,changeAllocationStatus,CancelAllocatedBooking,ReAllocateBooking};
