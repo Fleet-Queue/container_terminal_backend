@@ -7,23 +7,24 @@ import {
 } from "../utils/generateToken.js";
 
 const registerUser = AsyncHandler(async (req, res) => {
-  if (req.user?.role?.toLowerCase() !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Admins only' });
+  if (req.user?.role?.toLowerCase() !== "admin") {
+    return res.status(403).json({ message: "Access denied: Admins only" });
   }
-  const { email, name, password, phone, role,userName,address,companyId } = req.body;
+  const { email, name, password, phone, role, userName, address, companyId } =
+    req.body;
   const status = "true";
-  if(role=="company" && !companyId){
+  if (role == "company" && !companyId) {
     res.status(400);
     throw new Error("Company Id not Found");
   }
-  if(role=="company"){
+  if (role == "company") {
     const company = await Company.findById(companyId);
-    if(!company){
+    if (!company) {
       res.status(400);
       throw new Error("Company not Found");
     }
   }
-  
+
   const user = await User.findOne({ phone: phone });
   if (user) {
     res.status(403);
@@ -39,7 +40,7 @@ const registerUser = AsyncHandler(async (req, res) => {
     userName,
     companyId,
     address,
-    managedUserId: req.user._id
+    managedUserId: req.user._id,
   });
 
   if (newUser) {
@@ -57,26 +58,41 @@ const registerUser = AsyncHandler(async (req, res) => {
 
 const authUser = AsyncHandler(async (req, res) => {
   const { phone, password } = req.body;
-  console.log(req.body)
-  const user = await User.findOne({ phone: phone }).populate('companyId');
+  console.log(req.body);
+  const user = await User.findOne({ phone: phone }).populate("companyId");
 
   if (user && user.status) {
     if (await user.matchPassword(password)) {
-      const refresh = generateRefreshToken(user._id);
+      let expiresIn = "10d";
+      if (user.role == "admin") {
+        expiresIn = 5 * 365 * 24 * 60 * 60;
+      }
+      const refresh = generateRefreshToken(user._id, expiresIn);
 
       res.cookie("jwt", refresh, { httpOnly: true, secure: true });
 
+      const userObj = {
+        id: user._id,
+        name: user.name,
+        userName: user.userName,
+        address: user.address,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        company: user.companyId || null,
+      };
+
       res.json({
-        accessToken: generateAccessToken(user._id),
+        accessToken: generateAccessToken(user._id, expiresIn),
         userId: user._id,
-        user: user
+        user: userObj,
       });
     } else {
       res.status(403);
       throw new Error("invalid password");
     }
   } else {
-    res.status(402);
+    res.status(401);
     throw new Error("Invlaid user");
   }
 });
@@ -107,8 +123,8 @@ const getUser = AsyncHandler(async (req, res) => {
 });
 
 const getAllUser = AsyncHandler(async (req, res) => {
-  if (req.user?.role?.toLowerCase() !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Admins only' });
+  if (req.user?.role?.toLowerCase() !== "admin") {
+    return res.status(403).json({ message: "Access denied: Admins only" });
   }
   const { companyId } = req.query;
 
@@ -117,23 +133,20 @@ const getAllUser = AsyncHandler(async (req, res) => {
     query.companyId = companyId;
   }
 
-  const users = await User.find(query)
-    .select("-password")
-    .populate({
-      path: 'companyId',
-      model: 'Company', // Adjust if your model name is different
-      select: 'name' // Only get the company name
-    });
+  const users = await User.find(query).select("-password").populate({
+    path: "companyId",
+    model: "Company", // Adjust if your model name is different
+    select: "name", // Only get the company name
+  });
 
-  const usersWithCompanyName = users.map(user => ({
+  const usersWithCompanyName = users.map((user) => ({
     ...user.toObject(),
-    company: user.companyId?.name || 'N/A', // Just the company name
+    company: user.companyId?.name || "N/A", // Just the company name
     companyId: user.companyId?._id || null, // Still keep raw companyId if needed
   }));
 
   res.status(200).json(usersWithCompanyName);
 });
-
 
 const getUserByPhone = AsyncHandler(async (req, res) => {
   const { phone } = req.body;
@@ -148,9 +161,8 @@ const getUserByPhone = AsyncHandler(async (req, res) => {
 });
 
 const editUser = AsyncHandler(async (req, res) => {
-
-  if (req.user?.role?.toLowerCase() !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Admins only' });
+  if (req.user?.role?.toLowerCase() !== "admin") {
+    return res.status(403).json({ message: "Access denied: Admins only" });
   }
 
   const userId = req.params.userId || req.body.userId;
@@ -162,7 +174,15 @@ const editUser = AsyncHandler(async (req, res) => {
   }
 
   // Only update allowed fields — avoid blindly updating from req.body
-  const updatableFields = ['name', 'userName', 'address', 'email', 'phone', 'status', 'companyId',];
+  const updatableFields = [
+    "name",
+    "userName",
+    "address",
+    "email",
+    "phone",
+    "status",
+    "companyId",
+  ];
   updatableFields.forEach((field) => {
     if (req.body[field] !== undefined) {
       user[field] = req.body[field];
@@ -173,7 +193,7 @@ const editUser = AsyncHandler(async (req, res) => {
     user.password = req.body.password;
   }
 
-  user.managedUserId = req.user._id
+  user.managedUserId = req.user._id;
 
   const updatedUser = await user.save();
 
@@ -192,9 +212,9 @@ const editUser = AsyncHandler(async (req, res) => {
   });
 });
 
-const deleteUser = (req, res) =>{
-  if (req.user?.role?.toLowerCase() !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Admins only' });
+const deleteUser = (req, res) => {
+  if (req.user?.role?.toLowerCase() !== "admin") {
+    return res.status(403).json({ message: "Access denied: Admins only" });
   }
   const userId = req.params.userId;
 
@@ -205,8 +225,7 @@ const deleteUser = (req, res) =>{
     .catch((err) => {
       res.status(500).json({ message: "Error deleting user", error: err });
     });
-}
-
+};
 
 const logout = (req, res) => {
   const cookies = req.cookies;
@@ -225,5 +244,5 @@ export {
   getUserByPhone,
   getAllUser,
   logout,
-  deleteUser
+  deleteUser,
 };

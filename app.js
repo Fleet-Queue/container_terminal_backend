@@ -19,7 +19,7 @@ import { createServer } from 'http';
 import rateLimit from "express-rate-limit";
 import requestIp from 'request-ip'
 import "./jobs/trucksQueueExpire.js";
-
+import fleetRouter from './routes/fleetRoutes.js'
 
 const PORT = process.env.PORT || 3000
 
@@ -72,6 +72,8 @@ app.use(['/api/user/login', '/api/admin/login'], limiter);
  app.use('/api/rate',rateMappingRoute)
  app.use('/api/doBooking',doBookingRoute)
  app.use('/api/allocation',allocationRoute)
+ //whatsapp apis
+ app.use('/api/fleet',fleetRouter)
 connectDB();
 
 httpServer.listen(PORT,()=>{
