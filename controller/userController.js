@@ -162,6 +162,7 @@ const getUserByPhone = AsyncHandler(async (req, res) => {
 
 const getUserByPhoneAndRole = AsyncHandler(async (req, res) => {
   const { phone, role } = req.body;
+  console.log(req.body)
   const user = await User.findOne({ phone: phone, role }).select("-password");
  
   if (user) {
