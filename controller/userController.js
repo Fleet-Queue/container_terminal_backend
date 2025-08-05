@@ -165,7 +165,7 @@ const getUserByPhoneAndRole = AsyncHandler(async (req, res) => {
   const user = await User.findOne({ phone: phone, role }).select("-password");
  
   if (user) {
-    res.status(201).json({user_status:201});
+    res.status(201).json({data:{user_status:201}});
   } else {
     res.status(404).json({user_status:404});
     throw new Error("invalid user");
