@@ -160,6 +160,18 @@ const getUserByPhone = AsyncHandler(async (req, res) => {
   }
 });
 
+const getUserByPhoneAndRole = AsyncHandler(async (req, res) => {
+  const { phone, role } = req.body;
+  const user = await User.findOne({ phone: phone, role }).select("-password");
+ 
+  if (user) {
+    res.status(201).json({user_status:201});
+  } else {
+    res.status(404).json({user_status:404});
+    throw new Error("invalid user");
+  }
+});
+
 const editUser = AsyncHandler(async (req, res) => {
   if (req.user?.role?.toLowerCase() !== "admin") {
     return res.status(403).json({ message: "Access denied: Admins only" });
@@ -245,4 +257,5 @@ export {
   getAllUser,
   logout,
   deleteUser,
+  getUserByPhoneAndRole
 };

@@ -9,6 +9,7 @@ import {
   logout,
   getAllUser,
   deleteUser,
+  getUserByPhoneAndRole,
 } from "../controller/userController.js";
 import { protect, protectRefreshToken } from "../middlewares/authMiddleware.js";
 import { errorHandler } from "../middlewares/errorMiddleware.js"; // Assuming you have an error handling middleware
@@ -24,7 +25,7 @@ router.route("/resetPassword").post(protect, updatePassword);
 router.route("/getUserByPhone").post(protect, getUserByPhone);
 router.route("/refresh").get(protectRefreshToken);
 router.route("/logout").get(logout);
-
+router.route("/validate-user").post(getUserByPhoneAndRole);
 router.use(errorHandler);
 
 export default router;
